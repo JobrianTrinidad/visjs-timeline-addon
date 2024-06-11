@@ -32,9 +32,10 @@
     background: yellow;
 }
 
-.vis-nested-group.vis-group-selected {
-    background-color: darkgrey !important;
-    border: 2px solid red !important;
+.vis-group-selected .vis-inner {
+     border: 4px solid #bbbbbb;
+     width: 65%;
+     height: 55%;
 }
 
 .vis-grid-highlighted {
