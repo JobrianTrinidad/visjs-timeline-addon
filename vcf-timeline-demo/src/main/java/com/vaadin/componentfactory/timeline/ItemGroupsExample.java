@@ -1,5 +1,6 @@
 package com.vaadin.componentfactory.timeline;
 
+import com.vaadin.componentfactory.timeline.model.AxisOrientation;
 import com.vaadin.componentfactory.timeline.model.ItemGroup;
 import com.vaadin.componentfactory.timeline.model.Item;
 import com.vaadin.flow.component.button.Button;
@@ -39,6 +40,10 @@ public class ItemGroupsExample extends Div {
                 LocalDateTime.of(2023, 1, 1, 0, 0, 0), LocalDateTime.of(2023, 9, 25, 0, 0, 0));
 
         timeline.setMultiselect(true);
+        //display vertical scrollbar at the right of the groups
+        timeline.setVerticalScroll(true);
+        //display date on both top and bottom
+        timeline.setAxisOrientation(AxisOrientation.BOTH);
         timeline.setStack(true);
         boolean bAutoZoom = false;
 
@@ -260,7 +265,7 @@ public class ItemGroupsExample extends Div {
         ItemGroup itemGroup1345 = new ItemGroup(1345, "Level 3 1345", true, 3);
         ItemGroup itemGroup2078 = new ItemGroup(2078, "Level 3 2078", true, 3);
         ItemGroup itemGroup1826 = new ItemGroup(1826, "Level 3 1826", true, 3);
-        ItemGroup itemGroup2107 = new ItemGroup(2107, "Level 3 2107", true, 3);
+        ItemGroup itemGroup2107 = new ItemGroup(2107, "Level 3 2107", null,true, 3, "bg-warning");
         ItemGroup itemGroup10 = new ItemGroup(10, "Group 10", "1,2,3,4,5,6", true, 1);
         ItemGroup itemGroup1 = new ItemGroup(1, "North America", "1243,1525,1624,1345,2078,1826,2076,2107",
                 true, 2);
