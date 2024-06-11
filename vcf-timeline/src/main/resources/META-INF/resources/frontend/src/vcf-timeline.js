@@ -59,7 +59,7 @@ window.vcftimeline = {
                     treeLevel: parsedGroupItems[i].treeLevel,
                     nestedGroups: groupsNested,
                     visible: parsedGroupItems[i].visible,
-                    className: "vis-group-unselected",
+                    className: parsedGroupItems[i].className,
                 });
             }
             items = new DataSet();
@@ -105,11 +105,16 @@ window.vcftimeline = {
                 selectedItems = properties.items;
                 let allGroups = groupItems.get();
                 for (let group of allGroups) {
+                        //remove all tags but preserve assign class
+                        var groupClass = group.className.replace("vis-group-unselected", "");
+                        groupClass = groupClass.replace("vis-group-selected", "");
                     if (group.id !== clickedGroup.groupId) {
-                        group.className = "vis-group-unselected"; // Replace 'old-class-name' with the actual class name
+                        groupClass+= " vis-group-unselected";
+                        group.className = groupClass;
                         groupItems.update(group);
                     } else {
-                        group.className = "vis-group-selected";
+                        groupClass += " vis-group-selected";
+                        group.className = groupClass;
                         groupItems.update(group);
                     }
                 }
@@ -520,32 +525,43 @@ window.vcftimeline = {
     },
 
     _updateGroupClassName: function (container, group, newClassName) {
+        var groupClass = group.className + " " + newClassName;
+
         let data = {
             id: Number.parseInt(group.id),
             content: group.content,
             treeLevel: group.treeLevel,
             nestedGroups: group.nestedGroups,
             visible: group.visible,
-            className: newClassName,
+            className: groupClass,
         };
         this._removeGroupsClassName(container, group.id, "vis-group-unselected");
         container.timeline._timeline.itemSet.groups[group.id].setData(data);
     },
 
+    //unselect everything
     _removeGroupsClassName: function (container, groupId, oldClassName) {
+
         let itemSet = container.timeline._timeline.itemSet;
         let parsedGroups = Object.keys(itemSet.groups);
         for (let anyGroupId = 0; anyGroupId < parsedGroups.length; anyGroupId++) {
             if (Number.parseInt(parsedGroups[anyGroupId]) !== Number.parseInt(groupId)) {
                 let tempGroup = itemSet.groupsData.get(Number.parseInt(parsedGroups[anyGroupId]));
                 if (tempGroup != null) {
+                    var groupClass = tempGroup.className;
+                    if (groupClass != null) {
+                        groupClass = groupClass.replace("vis-group-selected", "");
+                        groupClass += " "  +  oldClassName;
+                    } else {
+                        groupClass = oldClassName;
+                    }
                     let data = {
                         id: Number.parseInt(tempGroup.id),
                         content: tempGroup.content,
                         treeLevel: tempGroup.treeLevel,
                         nestedGroups: tempGroup.nestedGroups,
                         visible: tempGroup.visible,
-                        className: oldClassName,
+                        className: groupClass,
                     };
                     container.timeline._timeline.itemSet.groups[tempGroup.id].setData(data);
                 }
