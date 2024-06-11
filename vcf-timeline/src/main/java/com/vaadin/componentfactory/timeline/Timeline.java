@@ -355,6 +355,11 @@ public class Timeline extends Div {
         updateTimelineOptions();
     }
 
+    public void setVerticalScroll(boolean verticalScroll) {
+        getTimelineOptions().verticalScroll = verticalScroll;
+        updateTimelineOptions();
+    }
+
     /**
      * Sets whether tooltips will be displaying for items with defined titles. By default, tooltips
      * will be visibles.
