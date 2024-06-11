@@ -47,6 +47,15 @@ public class ItemGroup {
     public ItemGroup() {
     }
 
+    public ItemGroup(int groupId, String content, String nestedGroups, boolean visible, int treeLevel, String className) {
+        this.setId(groupId);
+        this.setContent(content);
+        this.setNestedGroups(nestedGroups);
+        this.setVisible(visible);
+        this.setTreeLevel(treeLevel);
+        this.setClassName(className);
+    }
+
     public ItemGroup(int groupId, String content, String nestedGroups, boolean visible, int treeLevel) {
         this.setId(groupId);
         this.setContent(content);
