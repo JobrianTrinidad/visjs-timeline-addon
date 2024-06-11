@@ -32,10 +32,8 @@
     background: yellow;
 }
 
-.vis-group-selected .vis-inner {
-     border: 4px solid #bbbbbb;
-     width: 65%;
-     height: 55%;
+.vis-label.vis-group-selected {
+	border: white 3px solid !important;
 }
 
 .vis-grid-highlighted {
