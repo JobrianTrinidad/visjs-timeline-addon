@@ -67,6 +67,10 @@ window.vcftimeline = {
             for (let i = 0; i < parsedItems.length; i++) {
                 let type = 0;
 
+                let s = '';
+                if (parsedItems[i].style != null) {
+                    s = parsedItems[i].style;
+                }
                 items.add({
                     id: parsedItems[i].id,
                     group: parsedItems[i].group,
@@ -77,6 +81,7 @@ window.vcftimeline = {
                         add: true, updateTime: true, updateGroup: true, remove: true,
                     },
                     selectable: true,
+                    style: s,
                     type: type,
                     className: parsedItems[i].className,
                 });
@@ -482,6 +487,10 @@ window.vcftimeline = {
 
     addItem: function (container, newItemJson, autoZoom) {
         let parsedItem = JSON.parse(newItemJson);
+        let s = '';
+        if (parsedItems[i].style != null) {
+            s = parsedItems[i].style;
+        }
         let item = {
             id: parsedItem.id,
             group: Number.parseInt(parsedItem.group),
@@ -490,6 +499,7 @@ window.vcftimeline = {
                 add: true, updateTime: true, updateGroup: true, remove: true, overrideItems: false
             },
             selectable: true,
+            style: s,
             start: parsedItem.start,
             end: parsedItem.end,
             type: 0,

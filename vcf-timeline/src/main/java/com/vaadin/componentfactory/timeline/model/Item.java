@@ -49,6 +49,8 @@ public class Item {
 
   private String group;
 
+  private String style;
+
   public Item() {}
 
   public Item(LocalDateTime start, LocalDateTime end) {
@@ -152,6 +154,13 @@ public class Item {
     this.group = group;
   }
 
+  public String getStyle() {
+    return style;
+  }
+
+  public void setStyle(String style) {
+    this.style = style;
+  }
 
   @Override
   public int hashCode() {
@@ -190,6 +199,7 @@ public class Item {
 
     Optional.ofNullable(getTitle()).ifPresent(v -> js.put("title", v));
     Optional.ofNullable(getClassName()).ifPresent(v -> js.put("className", v));
+    Optional.ofNullable(getStyle()).ifPresent(v -> js.put("style", v));
     return js.toJson();
   }
 }
