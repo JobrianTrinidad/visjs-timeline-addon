@@ -214,7 +214,7 @@ public class ItemGroupsExample extends Div {
                 "Item 1", 1);
         item1.setId("0");
         item1.setEditable(true);
-        item1.setUpdateTime(true);
+        item1.setUpdateTime(false);
         item1.setClassName("red");
 
         Item item2 = new Item(
@@ -223,7 +223,7 @@ public class ItemGroupsExample extends Div {
                 "Item 2", 6);
         item2.setId("1");
         item2.setEditable(true);
-        item2.setUpdateTime(true);
+        item2.setUpdateTime(false);
         item2.setClassName("bg-warning");
 
         Item item3 = new Item(
@@ -232,17 +232,19 @@ public class ItemGroupsExample extends Div {
                 "Item 3", 100);
         item3.setId("2");
         item3.setEditable(true);
-        item3.setUpdateTime(true);
+        item3.setUpdateTime(false);
         item3.setClassName("bg-warning");
 
         Item item4 = new Item(
                 LocalDateTime.of(2023, 8, 16, 1, 30, 0),
                 LocalDateTime.of(2023, 8, 17, 1, 0, 0),
-                "Item 4", 106);
+                "Item 4 - show style", 106);
         item4.setId("3");
         item4.setEditable(true);
         item4.setUpdateTime(true);
-        item4.setClassName("bg-warning");
+        item4.setTitle("Tooltip 4 Test");
+        //item4.setClassName("bg-warning");
+        item4.setStyle("background-color: pink;");
 
         Item item5 = new Item(
                 LocalDateTime.of(2023, 8, 11, 1, 30, 0),
@@ -250,8 +252,9 @@ public class ItemGroupsExample extends Div {
                 "Item 5", 1);
         item5.setId("4");
         item5.setEditable(true);
-        item5.setUpdateTime(true);
-        item5.setClassName("bg-warning");
+        item5.setUpdateTime(false);
+//        item5.setClassName("bg-warning");
+        item5.setStyle("background-color: #11ffaa;");
 
         return Arrays.asList(item1, item2, item3, item4, item5);
     }
