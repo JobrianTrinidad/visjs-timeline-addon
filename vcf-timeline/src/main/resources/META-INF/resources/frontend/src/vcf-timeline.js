@@ -534,6 +534,12 @@ window.vcftimeline = {
         container.timeline._timeline.itemsData.update(itemData);
     },
 
+    updateItemGroup: function (container, itemId, groupId) {
+        let itemData = container.timeline._timeline.itemSet.items[itemId].data;
+        itemData.group = groupId;
+        container.timeline._timeline.itemsData.update(itemData);
+    },
+
     _updateGroupClassName: function (container, group, newClassName) {
         var groupClass = group.className + " " + newClassName;
 

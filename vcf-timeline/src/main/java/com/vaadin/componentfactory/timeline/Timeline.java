@@ -390,6 +390,23 @@ public class Timeline extends Div {
     }
 
     /**
+     * Reassign Item group
+     * @param itemId
+     * @param groupID
+     */
+    public void updateItemGroup(String itemId, String groupID) {
+        this.getElement()
+                .executeJs("vcftimeline.updateItemGroup($0, $1, $2)", this, itemId, groupID);
+        items.stream()
+                .filter(i -> itemId.equals(i.getId()))
+                .findFirst()
+                .ifPresent(
+                        item -> {
+                            item.setGroup(groupID);
+                        });
+    }
+
+    /**
      * Sets snap value. It can be an hour, half an hour or fifteen minutes. By default it is set at
      * fifteeen minutes.
      *
