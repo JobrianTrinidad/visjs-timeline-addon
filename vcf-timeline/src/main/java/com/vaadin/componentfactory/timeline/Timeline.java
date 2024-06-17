@@ -158,6 +158,12 @@ public class Timeline extends Div {
         addItem(item, autoZoom);
     }
 
+    public void setGroups(List<ItemGroup> groups) {
+        this.itemGroups = new ArrayList<>(groups);
+        this.getElement()
+                .executeJs("vcftimeline.setGroups($0, $1)", this, "[" + convertGroupItemsToJson() + "]");
+    }
+
     public void setItems(List<Item> items, boolean autoZoom) {
         this.items = new ArrayList<>(items);
         this.getElement()

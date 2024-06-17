@@ -24,6 +24,7 @@ import java.util.List;
 public class ItemGroupsExample extends Div {
 
     private Button addItemButton;
+    private Button groupSetButton;
     private Item newItem;
 
     public ItemGroupsExample() {
@@ -87,8 +88,13 @@ public class ItemGroupsExample extends Div {
                 });
 
 
+        groupSetButton = new Button("Group Set"
+                , e-> {
+                timeline.setGroups(getGroupItems());
+                timeline.setItems(getItems(),true);
+        });
         HorizontalLayout horizontalLayout = new HorizontalLayout();
-        horizontalLayout.add(startRange, endRange);
+        horizontalLayout.add(startRange, endRange, groupSetButton);
         selectRangeLayout.add(horizontalLayout);
         return selectRangeLayout;
     }
