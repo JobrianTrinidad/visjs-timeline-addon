@@ -510,7 +510,7 @@ window.vcftimeline = {
 
     setGroups: function (container, groupsJson) {
         let groups = new DataSet(JSON.parse(groupsJson));
-        container.timeline._timeline.setItems(groups);
+        container.timeline._timeline.setGroups(groups);
     },
 
     setItems: function (container, itemsJson, autoZoom) {
