@@ -509,8 +509,29 @@ window.vcftimeline = {
     },
 
     setGroups: function (container, groupsJson) {
-        let groups = new DataSet(JSON.parse(groupsJson));
-        container.timeline._timeline.setGroups(groups);
+         let groupItems = new DataSet();
+         let parsedGroupItems = JSON.parse(groupsJson);
+         for (let i=0; i < parsedGroupItems.length; i++) {
+            let nestedGroups = [];
+            let groupsNested = [];
+            try {
+                nestedGroups = parsedGroupItems[i].nestedGroups.split(",");
+                for (let j=0; j < nestedGroups.length; j++) {
+                    groupsNested[j] = Number.parseInt(nestedGroups[j]);
+                }
+            } catch (e) {
+                groupsNested = null;
+            }
+            groupItems.add( {
+                id : Number.parseInt(parsedGroupItems[i].groupId),
+                content : parsedGroupItems[i].content,
+                treeLevel : parsedGroupItems.treeLevel,
+                nestedGroups: groupsNested,
+                visible: parsedGroupItems[i].visible,
+                className: parsedGroupItems[i].className,
+            });
+         }
+         container.timeline._timeline.setGroups(groupItems);
     },
 
     setItems: function (container, itemsJson, autoZoom) {
