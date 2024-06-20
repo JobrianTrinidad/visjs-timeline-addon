@@ -77,8 +77,12 @@ window.vcftimeline = {
                     content: parsedItems[i].content,
                     start: parsedItems[i].start,
                     end: parsedItems[i].end,
+                    title: parsedItems[i].title,
                     editable: {
-                        add: true, updateTime: true, updateGroup: true, remove: true,
+                        add: true,
+                        updateTime: parsedItems[i].editable && parsedItems[i].editable.updateTime !== undefined ? parsedItems[i].editable.updateTime : true,
+                        updateGroup: true,
+                        remove: parsedItems[i].editable && parsedItems[i].editable.remove !== undefined ? parsedItems[i].editable.remove : true,
                     },
                     selectable: true,
                     style: s,
@@ -111,7 +115,7 @@ window.vcftimeline = {
                 let allGroups = groupItems.get();
                 for (let group of allGroups) {
                         //remove all tags but preserve assign class
-                        var groupClass = group.className.replace("vis-group-unselected", "");
+                        var groupClass = (group.className === null || group.className === '') ? group.className.replace("vis-group-unselected", "") : "";
                         groupClass = groupClass.replace("vis-group-selected", "");
                     if (group.id !== clickedGroup.groupId) {
                         groupClass+= " vis-group-unselected";
@@ -525,7 +529,7 @@ window.vcftimeline = {
             groupItems.add( {
                 id : Number.parseInt(parsedGroupItems[i].groupId),
                 content : parsedGroupItems[i].content,
-                treeLevel : parsedGroupItems.treeLevel,
+                treeLevel : parsedGroupItems[i].treeLevel,
                 nestedGroups: groupsNested,
                 visible: parsedGroupItems[i].visible,
                 className: parsedGroupItems[i].className,
