@@ -157,7 +157,6 @@
                 <artifactId>jetty-maven-plugin</artifactId>
                 <version>11.0.15</version>
                 <configuration>
-                    <scanInterval>-1</scanInterval>
                     <stopKey>${project.artifactId}</stopKey>
                     <stopPort>8081</stopPort>
                 </configuration>
@@ -173,7 +172,7 @@
                             <goal>prepare-frontend</goal>
                         </goals>
                         <configuration>
-                            <convertHtml>false</convertHtml>
+                            <nodeAutoUpdate>true</nodeAutoUpdate>
                         </configuration>
                     </execution>
                 </executions>
@@ -186,6 +185,11 @@
                     <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.3.2</version>
+            </plugin>
         </plugins>
     </build>
 
@@ -197,14 +201,6 @@
             <properties>
                 <vaadin.productionMode>true</vaadin.productionMode>
             </properties>
-
-            <dependencies>
-                <dependency>
-                    <groupId>com.vaadin</groupId>
-                    <artifactId>flow-server-production-mode</artifactId>
-                </dependency>
-            </dependencies>
-
             <build>
                 <plugins>
                     <plugin>
