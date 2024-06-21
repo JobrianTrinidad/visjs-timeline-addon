@@ -489,6 +489,32 @@ window.vcftimeline = {
         container.timeline._timeline.setSelection(temp);
     },
 
+    onSelectGroup: function (container, selectGroupID) {
+        if (container && container.timeline && container.timeline._timeline && container.timeline._timeline.itemSet) {
+            let itemSet = container.timeline._timeline.itemSet;
+            if(itemSet && itemSet.groupsData)
+            {
+                let groups = itemSet.groups;
+                if (groups && groups[selectGroupID]) {
+                    let groupID = groups[selectGroupID].groupId;
+                    let group = itemSet.groupsData.get(groupID);
+                    if(group)
+                    {
+                        container.$server.onSelectItemInGroup(group.id);
+                        if (!group.nestedGroups)
+                            this._updateGroupClassName(container, group, "vis-group-selected");
+                    }
+                } else {
+                    console.warn('Group not found for the provided selectGroupID.');
+                }
+            } else {
+                console.warn('Invalid group date structure.');
+            }
+        } else {
+            console.warn('Invalid container or timeline structure.');
+        }
+    },
+
     addItem: function (container, newItemJson, autoZoom) {
         let parsedItem = JSON.parse(newItemJson);
         let s = '';

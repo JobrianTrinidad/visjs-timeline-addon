@@ -459,6 +459,10 @@ public class Timeline extends Div {
         fireItemSelectEvent(itemId, LocalDateTime.now(), LocalDateTime.now(), true);
     }
 
+    public void setSelectGroup(String groupID) {
+        this.getElement().executeJs("vcftimeline.onSelectGroup($0, $1)", this, groupID);
+    }
+
     /**
      * Fires a {@link ItemResizeEvent}.
      *

@@ -174,6 +174,10 @@ public class ItemGroupsExample extends Div {
         Button setSelectBtn = new Button("Select Item", e -> timeline.setSelectItem(textField.getValue()));
         selectLayout.add(textField, setSelectBtn);
 
+        TextField tfGroupSelected = new TextField();
+        Button setSelectGroupBtn = new Button("Select Group", e -> timeline.setSelectGroup(tfGroupSelected.getValue()));
+        selectLayout.add(tfGroupSelected, setSelectGroupBtn);
+
         HorizontalLayout zoomOptionsLayout = new HorizontalLayout();
         zoomOptionsLayout.setMargin(true);
         Button oneDay = new Button("1 day", e -> timeline.setZoomOption(1));
