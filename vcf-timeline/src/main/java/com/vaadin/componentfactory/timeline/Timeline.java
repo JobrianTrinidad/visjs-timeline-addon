@@ -638,6 +638,19 @@ public class Timeline extends Div {
         }
     }
 
+    public void revertMove(String itemId, LocalDateTime startDate, LocalDateTime endDate) {
+        Item item =
+                items.stream()
+                        .filter(i -> itemId.equals(i.getId()))
+                        .findFirst()
+                        .orElse(null);
+        if (item != null) {
+            item.setStart(startDate);
+            item.setEnd(endDate);
+            revertMove(itemId);
+        }
+    }
+
     private void revertMove(String itemId) {
         Item item =
                 items.stream()
