@@ -32,6 +32,7 @@ import com.vaadin.flow.component.dependency.NpmPackage;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.internal.Pair;
 import elemental.json.JsonObject;
+import org.apache.commons.lang3.StringUtils;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -443,6 +444,29 @@ public class Timeline extends Div {
         }
 
         this.fireItemUpdateTitle(item, true);
+    }
+
+    @ClientCallable
+    public void expandCollapseGroup(String groupId, boolean isCollapse)
+    {
+        int index = 0;
+        for (Item item : items) {
+           if(item.getGroup().equalsIgnoreCase(groupId)) {
+               String currentStyle = StringUtils.isEmpty(item.getStyle()) ? "" : item.getStyle();
+               if(index > 1 && isCollapse) {
+                   if (!currentStyle.contains("display: none")) {
+                       item.setStyle(currentStyle + "display: none;");
+                   }
+               } else {
+                   // Remove any existing "display: none" style
+                   String newStyle = currentStyle.replaceAll("display: none;", "").trim();
+                   item.setStyle(newStyle);
+               }
+               index++;
+           }
+        }
+        this.getElement()
+                .executeJs("vcftimeline.setItems($0, $1, $2)", this, "[" + convertItemsToJson() + "]", true);
     }
 
     /**

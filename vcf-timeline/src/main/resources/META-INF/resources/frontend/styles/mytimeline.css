@@ -52,6 +52,13 @@
     z-index: 1000;
 }
 
+.icon-expanded:before {
+    content: "\2212"; /* Minus sign (−) */
+}
+.icon-collapsed:before {
+    content: "\002B"; /* Plus sign (+) */
+}
+
 /*.vis-selected.vis-item.vis-delete-rtl:after, .vis-selected.vis-item.vis-delete:after {*/
 /*    content: '\00D7';*/
 /*    position: absolute;*/

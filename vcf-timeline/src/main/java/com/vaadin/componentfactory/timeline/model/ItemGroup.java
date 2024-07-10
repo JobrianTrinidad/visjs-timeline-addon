@@ -42,7 +42,7 @@ public class ItemGroup {
     private String nestedGroups;
 
     private boolean visible;
-    private String className;
+    private String className = "ig-group";
 
     public ItemGroup() {
     }

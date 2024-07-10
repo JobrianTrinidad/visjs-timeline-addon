@@ -102,6 +102,23 @@ window.vcftimeline = {
 
         container.timeline = new Arrow(timeline, bGroup);
 
+        // Save the original toggleGroupShowNested function
+        container.timeline._timeline.itemSet._originalToggleGroupShowNested = container.timeline._timeline.itemSet.toggleGroupShowNested;
+        // Define your custom toggleGroupShowNested function
+        function customToggleGroupShowNested(group) {
+          // Add your validation logic here
+          console.log("Custom validation for group:", group);
+          if(group.isShowHideCall)
+          {
+            group.isShowHideCall = false;
+            return;
+          }
+          // Call the original toggleGroupShowNested function
+          container.timeline._timeline.itemSet._originalToggleGroupShowNested(group);
+        }
+        // Overwrite the existing _onGroupClick function
+        container.timeline._timeline.itemSet.toggleGroupShowNested = customToggleGroupShowNested.bind(container.timeline._timeline.itemSet);
+
         let group = null;
         let selectedItems = [];
 
@@ -134,6 +151,9 @@ window.vcftimeline = {
         });
 
         container.timeline._timeline.on('doubleClick', function (properties) {
+            if (properties.firstTarget && properties.firstTarget.tagName === 'BUTTON') {
+              return;
+            }
             if (properties.what === 'item') {
                 let itemData = container.timeline._timeline.itemsData.get(properties.item);
                 itemData.content = '<input>' + itemData.content;
@@ -144,15 +164,66 @@ window.vcftimeline = {
         });
 
         container.timeline._timeline.itemSet.groupHammer.on("tap", (properties) => {
+             if (properties.firstTarget && properties.firstTarget.tagName === 'BUTTON') {
+               return;
+             }
             let itemSet = container.timeline._timeline.itemSet;
             let temp = itemSet.groupFromTarget(properties.srcEvent);
             group = itemSet.groupsData.get(temp.groupId);
             container.$server.onSelectItemInGroup(group.id);
-            if (!group.nestedGroups) this._updateGroupClassName(container, group, "vis-group-selected");
-
+            if (!group.nestedGroups)
+                this._updateGroupClassName(container, group, "vis-group-selected");
+            else
+            {
+                for (const nestedGroup of group.nestedGroups) {
+                    this._removeGroupsClassName(container, nestedGroup, "vis-group-unselected");
+                }
+            }
         });
 
+        function checkDisplayForItems(items) {
+          for (let i = 2; i < items.length; i++) {
+            if (items[i].dom.box.style.display !== 'none') {
+              return false;
+            }
+          }
+          return true;
+        }
+
         container.timeline._timeline.on("changed", () => {
+            // Get the groups from the timeline
+            const groups = container.timeline._timeline.itemSet.groups;
+            // Loop through each group
+            Object.values(groups).forEach(group => {
+              const items = Object.values(group.items);
+              // Check if the group has more than 2 items
+              if (items.length > 2 && !group.dom.label.querySelector("button")) {
+                    const button = document.createElement("button");
+                    if (group.isCollapsed === undefined || group.isCollapsed === null) {
+                       group.isCollapsed = checkDisplayForItems(items);
+                    }
+
+                    button.classList.add( group.isCollapsed ? "icon-collapsed" : "icon-expanded");
+                    button.groupID = group.groupId;
+                    group.dom.label.appendChild(button);
+                    button.addEventListener("click", (event) => {
+                      container.timeline._timeline.itemSet.groups[event.target.groupID].isShowHideCall = true;
+                      if (container.timeline._timeline.itemSet.groups[event.target.groupID].isCollapsed || button.classList.contains('icon-collapsed')) {
+                        button.classList.remove("icon-collapsed");
+                        button.classList.add("icon-expanded");
+                        container.timeline._timeline.itemSet.groups[event.target.groupID].isCollapsed = false;
+                        container.$server.expandCollapseGroup(event.target.groupID, false);
+                      } else {
+                        button.classList.remove("icon-expanded");
+                        button.classList.add("icon-collapsed");
+                        container.timeline._timeline.itemSet.groups[event.target.groupID].isCollapsed = true;
+                        container.$server.expandCollapseGroup(event.target.groupID, true);
+                      }
+                      event.stopPropagation();
+                    });
+              }
+            });
+
             this._updateConnections(container, false);
             this._updateTimelineHeight(container);
         });
@@ -637,6 +708,11 @@ window.vcftimeline = {
                     } else {
                         groupClass = oldClassName;
                     }
+
+//                    if (!groupClass) {
+//                        groupClass = null;
+//                    }
+
                     let data = {
                         id: Number.parseInt(tempGroup.id),
                         content: tempGroup.content,
