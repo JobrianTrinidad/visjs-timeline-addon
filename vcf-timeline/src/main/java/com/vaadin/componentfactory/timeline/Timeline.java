@@ -34,6 +34,7 @@ import com.vaadin.flow.internal.Pair;
 import elemental.json.JsonObject;
 import org.apache.commons.lang3.StringUtils;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -144,6 +145,20 @@ public class Timeline extends Div {
         } catch (RuntimeException ignored) {
         }
         this.getElement().executeJs("vcftimeline.addItem($0, $1, $2)", this, item.toJSON(), autoZoom);
+    }
+
+    public void moveWindowTo(LocalDateTime startDateTime, LocalDateTime endDateTime) {
+        Duration duration = Duration.between(startDateTime, endDateTime);
+        long days = duration.toDays();
+        long hours = duration.toHours();
+        LocalDateTime adjustedEndDateTime = endDateTime;
+        // have to add some buffer duration so that end data is visible properly
+        if (days >= 1) {
+            adjustedEndDateTime = endDateTime.plusDays(1);
+        } else if (hours >= 1) {
+            adjustedEndDateTime = endDateTime.plusHours(1);
+        }
+        getElement().executeJs("vcftimeline._moveWindowTo($0, $1, $2)", this, startDateTime.toString(), adjustedEndDateTime.toString());
     }
 
     @ClientCallable

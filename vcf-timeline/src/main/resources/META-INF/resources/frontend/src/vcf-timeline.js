@@ -183,7 +183,7 @@ window.vcftimeline = {
 
         function checkDisplayForItems(items) {
           for (let i = 2; i < items.length; i++) {
-            if (items[i].dom.box.style.display !== 'none') {
+            if (items[i].dom && items[i].dom.box && items[i].dom.box.style.display !== 'none') {
               return false;
             }
           }
@@ -428,7 +428,9 @@ window.vcftimeline = {
             container.timeline._timeline.timeAxis._repaintMinorLine(left, width, "both", "vis-grid-highlighted");
         });
     },
-
+    _moveWindowTo(container, dateStart, dateEnd){
+        container.timeline._timeline.setWindow(new Date(dateStart), new Date(dateEnd), {animation: true});
+    },
     _moveWindowToRight(container, range, widthInMilliseconds) {
         container.timeline._timeline.setWindow(new Date(range.start.valueOf() - widthInMilliseconds / 50), new Date(range.end.valueOf() - widthInMilliseconds / 50), {animation: false});
     },
