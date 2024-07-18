@@ -195,35 +195,146 @@ window.vcftimeline = {
             const groups = container.timeline._timeline.itemSet.groups;
             // Loop through each group
             Object.values(groups).forEach(group => {
-              const items = Object.values(group.items);
-              // Check if the group has more than 2 items
-              if (items.length > 2 && !group.dom.label.querySelector("button")) {
-                    const button = document.createElement("button");
-                    if (group.isCollapsed === undefined || group.isCollapsed === null) {
-                       group.isCollapsed = checkDisplayForItems(items);
+            	var items = Object.values(group.visibleItems);
+                var maxHeight = 0;
+                const minHeight = (items.length > 0) ? group._calculateHeight(items[0].options.margin) : group.props.label.height;
+                const itemSize = items.length;
+
+                // Sort items by top style value or start date
+                items.sort((a, b) => {
+                    if (a.dom?.box && b.dom?.box) {
+                        const topA = parseInt(a.dom.box.style.top);
+                        const topB = parseInt(b.dom.box.style.top);
+
+                        // Sort by style.top if both values are numbers, otherwise by start date
+                        if (!isNaN(topA) && !isNaN(topB)) {
+                            return topA - topB;
+                        }
+                    }
+                    return new Date(a.data.start) - new Date(b.data.start);
+                });
+
+                // Filter items to include only those with valid display style
+                items = items.filter(item => {
+                    if (item.dom?.box) {
+                        const displayStyle = item.dom.box.style.display;
+                        return displayStyle === '' || displayStyle !== 'none';
+                    }
+                    return true;
+                });
+                const OFFSET = 5;
+            	if (container.timeline._timeline.itemSet.options.stack) {
+                    const TOP_OFFSET_PX = '5px';
+
+                    if (items.length > 0) {
+                        if (items[0].dom?.box) {
+                            items[0].dom.box.style.top = TOP_OFFSET_PX;
+                        }
+
+                        for (let i = 1; i < items.length; i++) {
+                            const current = items[i];
+                            const previous = items[i - 1];
+
+                            if (current.dom?.box && previous.dom?.box) {
+                                const currentStart = current.data.start.getTime();
+                                const previousEnd = previous.data.end.getTime();
+
+                                if (currentStart === previousEnd) {
+                                    if (!previous.dom.box.style.top) {
+                                        previous.dom.box.style.top = TOP_OFFSET_PX;
+                                        current.dom.box.style.top = TOP_OFFSET_PX;
+                                    } else {
+                                        current.dom.box.style.top = previous.dom.box.style.top;
+                                    }
+                                } else if (
+                                    current.dom.box.style.top &&
+                                    previous.dom.box.style.top &&
+                                    parseInt(current.dom.box.style.top) >= (parseInt(previous.dom.box.style.top) + previous.height + OFFSET)
+                                ) {
+                                    current.dom.box.style.top = (parseInt(previous.dom.box.style.top) + previous.height + OFFSET) + 'px';
+                                }
+
+                                const currentTop = current.dom.box.style.top ? parseInt(current.dom.box.style.top) : 0;
+                                if ((currentTop + current.height) > maxHeight) {
+                                    maxHeight = currentTop + current.height;
+                                }
+                            }
+                        }
+
+                        const groupHeight = (items.length === 1) ? (minHeight + OFFSET) : (maxHeight + OFFSET);
+                        group._applyGroupHeight(groupHeight);
+                    } else {
+                        const groupHeight = (minHeight > maxHeight) ? (minHeight + OFFSET) : (maxHeight + OFFSET);
+                        group._applyGroupHeight(groupHeight);
                     }
 
-                    button.classList.add( group.isCollapsed ? "icon-collapsed" : "icon-expanded");
-                    button.groupID = group.groupId;
-                    group.dom.label.appendChild(button);
-                    button.addEventListener("click", (event) => {
-                      container.timeline._timeline.itemSet.groups[event.target.groupID].isShowHideCall = true;
-                      if (container.timeline._timeline.itemSet.groups[event.target.groupID].isCollapsed || button.classList.contains('icon-collapsed')) {
-                        button.classList.remove("icon-collapsed");
-                        button.classList.add("icon-expanded");
-                        container.timeline._timeline.itemSet.groups[event.target.groupID].isCollapsed = false;
-                        container.$server.expandCollapseGroup(event.target.groupID, false);
-                      } else {
-                        button.classList.remove("icon-expanded");
-                        button.classList.add("icon-collapsed");
-                        container.timeline._timeline.itemSet.groups[event.target.groupID].isCollapsed = true;
-                        container.$server.expandCollapseGroup(event.target.groupID, true);
-                      }
-                      event.stopPropagation();
-                    });
-              }
-            });
+                     const button = (group.dom?.label) ? group.dom.label.querySelector("button") : null;
+                     if (button)
+                        button.style.display = (itemSize > 2) ? '' : 'none';
 
+                    // Check if the group has more than 2 items
+                    if (itemSize > 2 && group.dom.label && !button) {
+                        const button = document.createElement("button");
+
+                        // Set initial collapse state if not defined
+                        if (group.isCollapsed === undefined || group.isCollapsed === null) {
+                            group.isCollapsed = checkDisplayForItems(items);
+                        }
+
+                        // Set button class based on the collapse state
+                        button.classList.add(group.isCollapsed ? "icon-collapsed" : "icon-expanded");
+                        button.groupID = group.groupId;
+                        group.dom.label.appendChild(button);
+
+                        // Event listener for button click
+                        button.addEventListener("click", (event) => {
+                            const groupID = event.target.groupID;
+                            const group = container.timeline._timeline.itemSet.groups[groupID];
+                            group.isShowHideCall = true;
+
+                            if (group.isCollapsed || button.classList.contains('icon-collapsed')) {
+                                button.classList.replace("icon-collapsed", "icon-expanded");
+                                group.isCollapsed = false;
+                                container.$server.expandCollapseGroup(groupID, false);
+                            } else {
+                                button.classList.replace("icon-expanded", "icon-collapsed");
+                                group.isCollapsed = true;
+                                container.$server.expandCollapseGroup(groupID, true);
+                            }
+                            event.stopPropagation();
+                        });
+                    }
+            	}
+            	// When it does not stack and if items overlap, add some space at the top
+                else if (items.length > 0) {
+                    let maxHeight = group.dom.label.offsetHeight;
+
+                    for (let i = 1; i < items.length; i++) {
+                        const currentItem = items[i];
+                        const prevItem = items[i - 1];
+
+                        if (currentItem.dom?.box && prevItem.dom?.box) {
+                            const currentStart = currentItem.data.start.getTime();
+                            const prevStart = prevItem.data.start.getTime();
+                            const currentEnd = currentItem.data.end.getTime();
+                            const prevEnd = prevItem.data.end.getTime();
+
+                            // Adjust top position if items have the same start time & end
+                            if (currentStart === prevStart && currentEnd === prevEnd) {
+                                const prevTop = parseInt(prevItem.dom.box.style.top) || 0;
+                                currentItem.dom.box.style.top = `${prevTop + currentItem.height}px`;
+                            }
+
+                            // Update maxHeight if current item exceeds it
+                            const currentTop = parseInt(currentItem.dom.box.style.top) || 0;
+                            if (currentTop + currentItem.height > maxHeight) {
+                                maxHeight = currentTop + currentItem.height;
+                            }
+                        }
+                    }
+                    group._applyGroupHeight(maxHeight + OFFSET);
+                }
+            });
             this._updateConnections(container, false);
             this._updateTimelineHeight(container);
         });
