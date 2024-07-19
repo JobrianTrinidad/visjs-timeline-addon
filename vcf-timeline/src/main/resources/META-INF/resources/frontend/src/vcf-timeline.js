@@ -190,6 +190,14 @@ window.vcftimeline = {
           return true;
         }
 
+        container.timeline._timeline.on('rangechanged', function (properties) {
+          const rangeChangedData = {
+              start: properties.start,
+              end: properties.end
+          };
+          container.$server.updateWindowRangeChangedEvent(rangeChangedData);
+        });
+
         container.timeline._timeline.on("changed", () => {
             // Get the groups from the timeline
             const groups = container.timeline._timeline.itemSet.groups;

@@ -461,6 +461,12 @@ public class Timeline extends Div {
         this.fireItemUpdateTitle(item, true);
     }
 
+
+    @ClientCallable
+    public void updateWindowRangeChangedEvent(JsonObject eventData) {
+        this.fireWindowRangeChangedEvent(TimelineUtil.convertDateTimeFromString(eventData.getString("start")), TimelineUtil.convertDateTimeFromString(eventData.getString("end")), true);
+    }
+
     @ClientCallable
     public void expandCollapseGroup(String groupId, boolean isCollapse)
     {
@@ -533,6 +539,17 @@ public class Timeline extends Div {
         } catch (RuntimeException e) {
             exception = e;
             event.setCancelled(true);
+        }
+    }//
+
+    protected void fireWindowRangeChangedEvent(LocalDateTime newStart, LocalDateTime newEnd, boolean fromClient) {
+        WindowRangeChangedEvent event = new WindowRangeChangedEvent(this, newStart, newEnd, fromClient);
+        RuntimeException exception = null;
+
+        try {
+            fireEvent(event);
+        } catch (RuntimeException e) {
+            exception = e;
         }
     }//
 
@@ -744,6 +761,16 @@ public class Timeline extends Div {
      */
     public void addGroupItemSelectListener(ComponentEventListener<GroupItemSelectEvent> listener) {
         addListener(GroupItemSelectEvent.class, listener);
+    }
+
+
+    /**
+     * Adds a listener for {@link WindowRangeChangedEvent} to the component.
+     *
+     * @param listener the listener to be added
+     */
+    public void addWindowRangeChangedListener(ComponentEventListener<WindowRangeChangedEvent> listener) {
+        addListener(WindowRangeChangedEvent.class, listener);
     }
 
     /**
