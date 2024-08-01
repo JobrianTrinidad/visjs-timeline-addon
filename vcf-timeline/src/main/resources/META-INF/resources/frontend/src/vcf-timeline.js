@@ -106,8 +106,7 @@ window.vcftimeline = {
         container.timeline._timeline.itemSet._originalToggleGroupShowNested = container.timeline._timeline.itemSet.toggleGroupShowNested;
         // Define your custom toggleGroupShowNested function
         function customToggleGroupShowNested(group) {
-          // Add your validation logic here
-          console.log("Custom validation for group:", group);
+//          console.log("Custom validation for group:", group);
           if(group.isShowHideCall)
           {
             group.isShowHideCall = false;
@@ -181,113 +180,299 @@ window.vcftimeline = {
             }
         });
 
-        function checkDisplayForItems(items) {
-          for (let i = 2; i < items.length; i++) {
-            if (items[i].dom && items[i].dom.box && items[i].dom.box.style.display !== 'none') {
-              return false;
-            }
-          }
-          return true;
-        }
-
         container.timeline._timeline.on('rangechanged', function (properties) {
-          const rangeChangedData = {
-              start: properties.start,
-              end: properties.end
-          };
-          container.$server.updateWindowRangeChangedEvent(rangeChangedData);
+            const rangeChangedData = {
+                start: properties.start,
+                end: properties.end
+            };
+            container.$server.updateWindowRangeChangedEvent(rangeChangedData);
+            processTimelineGroups(container);
         });
 
-        container.timeline._timeline.on("changed", () => {
+        /**
+         * Sorts and filters an array of items based on their top position and start time.
+         *
+         * @param {Array} items - An array of items to be sorted and filtered.
+         * @param {boolean} shouldStack - Flag indicating whether the items should be stacked or not.
+         * @returns {Array} The sorted and filtered array of items.
+         *
+         * @example
+         * const items = [
+         *   {
+         *     data: { start: new Date('2024-07-01') },
+         *     dom: { box: document.querySelector('.item1') }
+         *   },
+         *   {
+         *     data: { start: new Date('2024-06-30') },
+         *     dom: { box: document.querySelector('.item2') }
+         *   }
+         * ];
+         * const shouldStack = true;
+         * const filteredItems = filterItems(items, shouldStack);
+         */
+        function filterItems(items, shouldStack) {
+            items.sort((a, b) => {
+                if (!shouldStack && a.dom?.box && b.dom?.box) {
+                    const topA = parseInt(a.dom.box.style.top);
+                    const topB = parseInt(b.dom.box.style.top);
+
+                    if (!isNaN(topA) && !isNaN(topB)) {
+                        return topA - topB;
+                    }
+                }
+                return new Date(a.data.start) - new Date(b.data.start);
+            });
+
+            return items.filter(item => {
+                if (item.dom?.box) {
+                    const displayStyle = item.dom.box.style.display;
+                    return displayStyle === '' || displayStyle !== 'none';
+                }
+                return true;
+            });
+        }
+
+        /**
+         * Stacks the items within a group and adjusts their vertical positions to avoid overlap.
+         * Updates the group's height based on the stacked items.
+         *
+         * @param {Array} items - An array of items to be stacked.
+         * @param {Object} group - The group object to which the items belong.
+         * @param {HTMLElement} container - The container element that holds the group.
+         * @param {number} OFFSET - The offset value to be added between items.
+         * @returns {number} The calculated height of the group after stacking the items.
+         *
+         * @example
+         * const items = [
+         *   {
+         *     data: { start: new Date(), end: new Date() },
+         *     dom: { box: document.querySelector('.item-box') },
+         *     height: 30,
+         *     options: { margin: 10 }
+         *   },
+         *   // More items...
+         * ];
+         * const group = {
+         *   _calculateHeight: function(margin) { ... },
+         *   _applyGroupHeight: function(height) { ... },
+         *   props: { label: { height: 20 } }
+         * };
+         * const container = document.querySelector('.container');
+         * const OFFSET = 10;
+         * const groupHeight = stackGroup(items, group, container, OFFSET);
+         */
+        function stackGroup(items, group, container, OFFSET) {
+            let maxHeight = 0;
+            let groupHeight = OFFSET;
+            const minHeight = (items.length > 0) ? group._calculateHeight(items[0].options.margin) : group.props.label.height;
+            const TOP_OFFSET_PX = '5px';
+
+            if (items.length > 0) {
+                if (items[0].dom?.box) {
+                    items[0].dom.box.style.top = TOP_OFFSET_PX;
+                }
+
+                for (let i = 1; i < items.length; i++) {
+                    const current = items[i];
+                    const previous = items[i - 1];
+
+                    if (current.dom?.box && previous.dom?.box) {
+                        const currentStart = current.data.start.getTime();
+                        const previousEnd = previous.data.end.getTime();
+
+                        if (currentStart === previousEnd) {
+                            if (!previous.dom.box.style.top) {
+                                previous.dom.box.style.top = TOP_OFFSET_PX;
+                                current.dom.box.style.top = TOP_OFFSET_PX;
+                            } else {
+                                current.dom.box.style.top = previous.dom.box.style.top;
+                            }
+                        } else {
+                            current.dom.box.style.top = findTopValue(current, i - 1, items, OFFSET);
+                        }
+
+                        const currentTop = current.dom.box.style.top ? parseInt(current.dom.box.style.top) : 0;
+                        if ((currentTop + current.height) > maxHeight) {
+                            maxHeight = currentTop + current.height;
+                        }
+                    }
+                }
+
+                groupHeight = (items.length === 1) ? (minHeight + OFFSET) : (maxHeight + OFFSET);
+                group._applyGroupHeight(groupHeight);
+            } else {
+                groupHeight = (minHeight > maxHeight) ? (minHeight + OFFSET) : (maxHeight + OFFSET);
+                group._applyGroupHeight(groupHeight);
+            }
+            return groupHeight;
+        }
+
+        /**
+         * Calculates the top position for the current item based on the positions and end times of previous items.
+         *
+         * @param {Object} current - The current item for which the top position is being calculated.
+         * @param {number} previousIndex - The index of the previous item in the items array.
+         * @param {Array} items - An array of items containing the current and previous items.
+         * @param {number} OFFSET - The offset value to be added between items.
+         * @returns {string} The calculated top position for the current item in pixels.
+         *
+         * @example
+         * const current = {
+         *   data: { start: new Date(), end: new Date() },
+         *   dom: { box: document.querySelector('.current-box') },
+         *   height: 30
+         * };
+         * const items = [
+         *   {
+         *     data: { start: new Date(), end: new Date() },
+         *     dom: { box: document.querySelector('.previous-box') },
+         *     height: 30
+         *   }
+         * ];
+         * const OFFSET = 10;
+         * const topValue = findTopValue(current, items.length - 1, items, OFFSET);
+         */
+        function findTopValue(current, previousIndex, items, OFFSET) {
+            if (previousIndex < 0) {
+                return OFFSET + 'px';
+            }
+
+            const previous = items[previousIndex];
+            if (previous.dom?.box) {
+                const currentStart = current.data.start.getTime();
+                const previousEnd = previous.data.end.getTime();
+
+                if (currentStart >= previousEnd) {
+                    return findTopValue(current, previousIndex - 1, items, OFFSET);
+                } else {
+                    const previousTop = previous.dom.box.style.top ? parseInt(previous.dom.box.style.top) : 0;
+                    const newTop = previousTop + previous.height + OFFSET;
+                    return newTop + 'px';
+                }
+            }
+
+            return findTopValue(current, previousIndex - 1, items, OFFSET);
+        }
+
+        /**
+         * Adjusts the positions of items in a group to unstack them and updates the group's height.
+         *
+         * @param {Object} group - The group object containing items to be adjusted.
+         * @param {number} OFFSET - The offset value for positioning the items within the group.
+         * @param {boolean} isReset - Flag indicating whether to reset the position of the items.
+         *                            - `true`: Reset the positions.
+         *                            - `false`: Adjust the positions without resetting.
+         * @returns {number} The calculated height of the group after adjustment.
+         *
+         * @example
+         * const group = {
+         *   visibleItems: { ... },
+         *   dom: { label: document.querySelector('.group-label') },
+         *   props: { label: { height: 20 } },
+         *   _calculateHeight: function(margin) { ... },
+         *   _applyGroupHeight: function(height) { ... }
+         * };
+         * const OFFSET = 10;
+         * const isReset = true;
+         * const groupHeight = unStackGroup(group, OFFSET, isReset);
+         */
+        function unStackGroup(group, OFFSET, isReset) {
+            let items = Object.values(group.visibleItems);
+            const minHeight = (items.length > 0) ? group._calculateHeight(items[0].options.margin) : group.props.label.height;
+            let currentHeight = group.dom.label.offsetHeight;
+            let maxHeight = 0;
+            let groupHeight = OFFSET;
+
+            for (let i = 1; i < items.length; i++) {
+                const currentItem = items[i];
+                const prevItem = items[i - 1];
+
+                if (currentItem.dom?.box && prevItem.dom?.box) {
+                    const currentStart = currentItem.data.start.getTime();
+                    const prevStart = prevItem.data.start.getTime();
+                    const currentEnd = currentItem.data.end.getTime();
+                    const prevEnd = prevItem.data.end.getTime();
+
+                    if(isReset)
+                    {
+                        if(i===1)
+                            prevItem.dom.box.style.top = `${OFFSET}px`;
+                        currentItem.dom.box.style.top = `${OFFSET}px`;
+                    }
+                    // Adjust top position if items have the same start time & end
+                    if (currentStart === prevStart && currentEnd === prevEnd) {
+                        const prevTop = parseInt(prevItem.dom.box.style.top) || 0;
+                        currentItem.dom.box.style.top = `${prevTop + currentItem.height}px`;
+                    }
+
+                    // Update maxHeight if current item exceeds it
+                    const currentTop = parseInt(currentItem.dom.box.style.top) || 0;
+                    if (currentTop + currentItem.height > maxHeight) {
+                        maxHeight = currentTop + currentItem.height;
+                    }
+                }
+            }
+            groupHeight = (items.length > 1) ?  (maxHeight + OFFSET) : (minHeight + OFFSET);
+            group._applyGroupHeight(groupHeight);
+            return groupHeight;
+        }
+
+        /**
+         * Toggles the display of a button within a specified group's.
+         *
+         * @param {boolean} isShowButton - Determines whether the button should be shown or hidden.
+         *                                  - `true`: Show the button.
+         *                                  - `false`: Hide the button.
+         * @param {Object} group - The group object which contains the DOM elements.
+         * @param {Object} [group.dom] - The DOM elements associated with the group.
+         * @param {HTMLElement} [group.dom.label] - The label element of the group that may contain the button.
+         * @returns {HTMLElement|null} The button element if found, otherwise `null`.
+         *
+         * @example
+         * const group = {
+         *   dom: {
+         *     label: document.querySelector('.group-label')
+         *   }
+         * };
+         * toggleButtonDisplay(true, group);  // Shows the button within the group's label
+         * toggleButtonDisplay(false, group); // Hides the button within the group's label
+         */
+        function toggleButtonDisplay(isShowButton, group) {
+            const button = (group.dom?.label) ? group.dom.label.querySelector("button") : null;
+            if (button) {
+                button.style.display = isShowButton ? '' : 'none';
+            }
+            return button;
+        }
+
+        /**
+         * Processes the groups in the timeline, stacks or unstacks items within groups, and handles the display of toggle buttons.
+         *
+         * @param {Object} container - The container object containing the timeline and its settings.
+         *
+         */
+        function processTimelineGroups(container) {
             // Get the groups from the timeline
             const groups = container.timeline._timeline.itemSet.groups;
+            const OFFSET = 5;
             // Loop through each group
             Object.values(groups).forEach(group => {
-            	var items = Object.values(group.visibleItems);
-                var maxHeight = 0;
-                const minHeight = (items.length > 0) ? group._calculateHeight(items[0].options.margin) : group.props.label.height;
-                const itemSize = items.length;
+                let items = Object.values(group.visibleItems);
+                const shouldStack = (typeof group.isCollapsed === "undefined") ? container.timeline._timeline.itemSet.options.stack : !group.isCollapsed;
+                items = filterItems(items, shouldStack);
 
-                // Sort items by top style value or start date
-                items.sort((a, b) => {
-                    if (a.dom?.box && b.dom?.box) {
-                        const topA = parseInt(a.dom.box.style.top);
-                        const topB = parseInt(b.dom.box.style.top);
+                // Set initial collapse state if not defined
+                if (group.isCollapsed === undefined || group.isCollapsed === null) {
+                    group.isCollapsed = !shouldStack;
+                }
 
-                        // Sort by style.top if both values are numbers, otherwise by start date
-                        if (!isNaN(topA) && !isNaN(topB)) {
-                            return topA - topB;
-                        }
-                    }
-                    return new Date(a.data.start) - new Date(b.data.start);
-                });
+                if (shouldStack) {
+                    const groupHeight = stackGroup(items, group, container, OFFSET);
+                    const isShowButton = items.length > 1 && (groupHeight > (items[0].height + (OFFSET * 2)));
+                    const button = toggleButtonDisplay(isShowButton, group);
 
-                // Filter items to include only those with valid display style
-                items = items.filter(item => {
-                    if (item.dom?.box) {
-                        const displayStyle = item.dom.box.style.display;
-                        return displayStyle === '' || displayStyle !== 'none';
-                    }
-                    return true;
-                });
-                const OFFSET = 5;
-            	if (container.timeline._timeline.itemSet.options.stack) {
-                    const TOP_OFFSET_PX = '5px';
-
-                    if (items.length > 0) {
-                        if (items[0].dom?.box) {
-                            items[0].dom.box.style.top = TOP_OFFSET_PX;
-                        }
-
-                        for (let i = 1; i < items.length; i++) {
-                            const current = items[i];
-                            const previous = items[i - 1];
-
-                            if (current.dom?.box && previous.dom?.box) {
-                                const currentStart = current.data.start.getTime();
-                                const previousEnd = previous.data.end.getTime();
-
-                                if (currentStart === previousEnd) {
-                                    if (!previous.dom.box.style.top) {
-                                        previous.dom.box.style.top = TOP_OFFSET_PX;
-                                        current.dom.box.style.top = TOP_OFFSET_PX;
-                                    } else {
-                                        current.dom.box.style.top = previous.dom.box.style.top;
-                                    }
-                                } else if (
-                                    current.dom.box.style.top &&
-                                    previous.dom.box.style.top &&
-                                    parseInt(current.dom.box.style.top) >= (parseInt(previous.dom.box.style.top) + previous.height + OFFSET)
-                                ) {
-                                    current.dom.box.style.top = (parseInt(previous.dom.box.style.top) + previous.height + OFFSET) + 'px';
-                                }
-
-                                const currentTop = current.dom.box.style.top ? parseInt(current.dom.box.style.top) : 0;
-                                if ((currentTop + current.height) > maxHeight) {
-                                    maxHeight = currentTop + current.height;
-                                }
-                            }
-                        }
-
-                        const groupHeight = (items.length === 1) ? (minHeight + OFFSET) : (maxHeight + OFFSET);
-                        group._applyGroupHeight(groupHeight);
-                    } else {
-                        const groupHeight = (minHeight > maxHeight) ? (minHeight + OFFSET) : (maxHeight + OFFSET);
-                        group._applyGroupHeight(groupHeight);
-                    }
-
-                     const button = (group.dom?.label) ? group.dom.label.querySelector("button") : null;
-                     if (button)
-                        button.style.display = (itemSize > 2) ? '' : 'none';
-
-                    // Check if the group has more than 2 items
-                    if (itemSize > 2 && group.dom.label && !button) {
+                    if (isShowButton && group.dom.label && !button) {
                         const button = document.createElement("button");
-
-                        // Set initial collapse state if not defined
-                        if (group.isCollapsed === undefined || group.isCollapsed === null) {
-                            group.isCollapsed = checkDisplayForItems(items);
-                        }
 
                         // Set button class based on the collapse state
                         button.classList.add(group.isCollapsed ? "icon-collapsed" : "icon-expanded");
@@ -303,46 +488,26 @@ window.vcftimeline = {
                             if (group.isCollapsed || button.classList.contains('icon-collapsed')) {
                                 button.classList.replace("icon-collapsed", "icon-expanded");
                                 group.isCollapsed = false;
-                                container.$server.expandCollapseGroup(groupID, false);
+                                stackGroup(items, group, container, OFFSET);
                             } else {
                                 button.classList.replace("icon-expanded", "icon-collapsed");
                                 group.isCollapsed = true;
-                                container.$server.expandCollapseGroup(groupID, true);
+                                unStackGroup(group, OFFSET, true);
                             }
                             event.stopPropagation();
                         });
                     }
-            	}
-            	// When it does not stack and if items overlap, add some space at the top
-                else if (items.length > 0) {
-                    let maxHeight = group.dom.label.offsetHeight;
-
-                    for (let i = 1; i < items.length; i++) {
-                        const currentItem = items[i];
-                        const prevItem = items[i - 1];
-
-                        if (currentItem.dom?.box && prevItem.dom?.box) {
-                            const currentStart = currentItem.data.start.getTime();
-                            const prevStart = prevItem.data.start.getTime();
-                            const currentEnd = currentItem.data.end.getTime();
-                            const prevEnd = prevItem.data.end.getTime();
-
-                            // Adjust top position if items have the same start time & end
-                            if (currentStart === prevStart && currentEnd === prevEnd) {
-                                const prevTop = parseInt(prevItem.dom.box.style.top) || 0;
-                                currentItem.dom.box.style.top = `${prevTop + currentItem.height}px`;
-                            }
-
-                            // Update maxHeight if current item exceeds it
-                            const currentTop = parseInt(currentItem.dom.box.style.top) || 0;
-                            if (currentTop + currentItem.height > maxHeight) {
-                                maxHeight = currentTop + currentItem.height;
-                            }
-                        }
-                    }
-                    group._applyGroupHeight(maxHeight + OFFSET);
+                } else {
+                    // When it does not stack and if items overlap, add some space at the top
+                    const groupHeight = (items.length > 1) ? unStackGroup(group, OFFSET, group.isCollapsed) : 0;
+                    const isShowButton = (items.length > 1) && (groupHeight > (items[0].height + (OFFSET * 2)));
+                    const button = toggleButtonDisplay(isShowButton, group);
                 }
             });
+        }
+
+        container.timeline._timeline.on("changed", () => {
+            processTimelineGroups(container);
             this._updateConnections(container, false);
             this._updateTimelineHeight(container);
         });
