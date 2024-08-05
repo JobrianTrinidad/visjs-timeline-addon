@@ -559,7 +559,7 @@ window.vcftimeline = {
                     } else {
                         window.vcftimeline.endPointTime = endPointTime;
                     }
-                    if (e.group) {
+                    if (e.group && e.what !== 'item') {
                         container.$server.jsAddItem(window.vcftimeline.startPointTime, window.vcftimeline.endPointTime, e.group, true);
                     }
                 }
