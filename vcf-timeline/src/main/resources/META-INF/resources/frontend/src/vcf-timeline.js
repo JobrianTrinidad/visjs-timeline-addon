@@ -882,7 +882,7 @@ window.vcftimeline = {
                 add: true, updateTime: true, updateGroup: true, remove: true, overrideItems: false
             },
             selectable: true,
-            style: parsedItem.style;,
+            style: parsedItem.style,
             start: parsedItem.start,
             end: parsedItem.end,
             type: 0,
