@@ -874,10 +874,6 @@ window.vcftimeline = {
 
     addItem: function (container, newItemJson, autoZoom) {
         let parsedItem = JSON.parse(newItemJson);
-        let s = '';
-        if (parsedItems[i].style != null) {
-            s = parsedItems[i].style;
-        }
         let item = {
             id: parsedItem.id,
             group: Number.parseInt(parsedItem.group),
@@ -886,7 +882,7 @@ window.vcftimeline = {
                 add: true, updateTime: true, updateGroup: true, remove: true, overrideItems: false
             },
             selectable: true,
-            style: s,
+            style: parsedItem.style;,
             start: parsedItem.start,
             end: parsedItem.end,
             type: 0,
