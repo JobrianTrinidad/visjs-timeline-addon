@@ -400,10 +400,10 @@ window.vcftimeline = {
                         currentItem.dom.box.style.top = `${OFFSET}px`;
                     }
                     // Adjust top position if items have the same start time & end
-                    if (currentStart === prevStart && currentEnd === prevEnd) {
-                        const prevTop = parseInt(prevItem.dom.box.style.top) || 0;
-                        currentItem.dom.box.style.top = `${prevTop + currentItem.height}px`;
-                    }
+//                    if (currentStart === prevStart && currentEnd === prevEnd) {
+//                        const prevTop = parseInt(prevItem.dom.box.style.top) || 0;
+//                        currentItem.dom.box.style.top = `${prevTop + currentItem.height}px`;
+//                    }
 
                     // Update maxHeight if current item exceeds it
                     const currentTop = parseInt(currentItem.dom.box.style.top) || 0;
@@ -500,7 +500,7 @@ window.vcftimeline = {
                 } else {
                     // When it does not stack and if items overlap, add some space at the top
                     const groupHeight = (items.length > 1) ? unStackGroup(group, OFFSET, group.isCollapsed) : 0;
-                    const isShowButton = (items.length > 1) && (groupHeight > (items[0].height + (OFFSET * 2)));
+                    const isShowButton = (items.length > 1);// && (groupHeight > (items[0].height + (OFFSET * 2)));
                     const button = toggleButtonDisplay(isShowButton, group);
                 }
             });
