@@ -300,9 +300,11 @@ window.vcftimeline = {
 
                 groupHeight = (items.length === 1) ? (minHeight + OFFSET) : (maxHeight + OFFSET);
                 group._applyGroupHeight(groupHeight);
-            } else {
+                group.isHightUpdate = true;
+            } else if (group.isHightUpdate) {
                 groupHeight = (minHeight > maxHeight) ? (minHeight + OFFSET) : (maxHeight + OFFSET);
                 group._applyGroupHeight(groupHeight);
+                group.isHightUpdate = false;
             }
             return groupHeight;
         }
@@ -414,6 +416,7 @@ window.vcftimeline = {
             }
             groupHeight = (items.length > 1) ?  (maxHeight + OFFSET) : (minHeight + OFFSET);
             group._applyGroupHeight(groupHeight);
+            group.isHightUpdate = true;
             return groupHeight;
         }
 
