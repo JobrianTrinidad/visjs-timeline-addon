@@ -457,9 +457,13 @@ window.vcftimeline = {
         function processTimelineGroups(container) {
             // Get the groups from the timeline
             const groups = container.timeline._timeline.itemSet.groups;
+            const visibleGroups = container.timeline._timeline.itemSet.getVisibleGroups();
             const OFFSET = 5;
             // Loop through each group
             Object.values(groups).forEach(group => {
+                if (!visibleGroups.includes(group.groupId.toString())) {
+                    return;
+                }
                 let items = Object.values(group.visibleItems);
                 const shouldStack = (typeof group.isCollapsed === "undefined") ? container.timeline._timeline.itemSet.options.stack : !group.isCollapsed;
                 items = filterItems(items, shouldStack);
@@ -470,6 +474,9 @@ window.vcftimeline = {
                 }
 
                 if (shouldStack) {
+                    if(items.length === 0 && !group.isHightUpdate) {
+                        return;
+                    }
                     const groupHeight = stackGroup(items, group, container, OFFSET);
                     const isShowButton = items.length > 1 && (groupHeight > (items[0].height + (OFFSET * 2)));
                     const button = toggleButtonDisplay(isShowButton, group);
