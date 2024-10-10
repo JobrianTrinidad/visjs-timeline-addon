@@ -33,14 +33,16 @@ public class GroupItemSelectEvent extends ComponentEvent<Div> {
 
     private boolean cancelled = false;
 
+    private boolean isSelectRequest = true;
+
     public GroupItemSelectEvent(
             Timeline source,
             String groupId,
-            boolean fromClient) {
+            boolean fromClient, boolean isSelectRequest) {
         super(source, fromClient);
         this.groupId = groupId;
         this.source = source;
-
+        this.isSelectRequest = isSelectRequest;
     }
 
     public String getGroupId() {
@@ -59,6 +61,14 @@ public class GroupItemSelectEvent extends ComponentEvent<Div> {
 
     public Timeline getTimeline() {
         return (Timeline) source;
+    }
+
+    public boolean isSelectRequest() {
+        return isSelectRequest;
+    }
+
+    public void setSelectRequest(boolean selectRequest) {
+        isSelectRequest = selectRequest;
     }
 
 }

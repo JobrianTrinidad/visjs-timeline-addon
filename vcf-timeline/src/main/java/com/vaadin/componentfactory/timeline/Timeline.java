@@ -530,8 +530,8 @@ public class Timeline extends Div {
     }//
 
     protected void fireGroupSelectEvent(
-            String groupId, boolean fromClient) {
-        GroupItemSelectEvent event = new GroupItemSelectEvent(this, groupId, fromClient);
+            String groupId, boolean fromClient, boolean isSelectRequest) {
+        GroupItemSelectEvent event = new GroupItemSelectEvent(this, groupId, fromClient, isSelectRequest);
         RuntimeException exception = null;
 
         try {
@@ -832,8 +832,12 @@ public class Timeline extends Div {
 
     @ClientCallable
     public void onSelectItemInGroup(String groupId) {
-//        selectedItemsIdsList.clear();
-        fireGroupSelectEvent(groupId, true);
+        fireGroupSelectEvent(groupId, true, true);
+    }
+
+    @ClientCallable
+    public void onDeselectItemInGroup(String groupId) {
+        fireGroupSelectEvent(groupId, true, false);
     }
 
     public void onSelectItem(Timeline container, String selectedItemsId, boolean autoZoom) {
