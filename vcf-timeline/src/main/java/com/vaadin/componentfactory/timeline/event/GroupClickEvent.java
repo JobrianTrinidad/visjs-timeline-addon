@@ -24,25 +24,22 @@ import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.html.Div;
 
 /**
- * Event is thrown when an group of item's are selected/de-selected
+ * An event is thrown when a group is a tab/clicked.
  */
-public class GroupItemSelectEvent extends ComponentEvent<Div> {
+public class GroupClickEvent extends ComponentEvent<Div> {
 
     private String groupId;
     private Timeline source;
 
     private boolean cancelled = false;
 
-    private boolean isSelectRequest = true;
-
-    public GroupItemSelectEvent(
+    public GroupClickEvent(
             Timeline source,
             String groupId,
-            boolean fromClient, boolean isSelectRequest) {
+            boolean fromClient) {
         super(source, fromClient);
         this.groupId = groupId;
         this.source = source;
-        this.isSelectRequest = isSelectRequest;
     }
 
     public String getGroupId() {
@@ -61,14 +58,6 @@ public class GroupItemSelectEvent extends ComponentEvent<Div> {
 
     public Timeline getTimeline() {
         return (Timeline) source;
-    }
-
-    public boolean isSelectRequest() {
-        return isSelectRequest;
-    }
-
-    public void setSelectRequest(boolean selectRequest) {
-        isSelectRequest = selectRequest;
     }
 
 }

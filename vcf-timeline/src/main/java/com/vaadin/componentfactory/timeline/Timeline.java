@@ -516,8 +516,7 @@ public class Timeline extends Div {
      * @param newEnd     new end date for the item
      * @param fromClient if event comes from client
      */
-    protected void fireItemSelectEvent(
-            String itemId, LocalDateTime newStart, LocalDateTime newEnd, boolean fromClient) {
+    protected void fireItemSelectEvent(String itemId, LocalDateTime newStart, LocalDateTime newEnd, boolean fromClient) {
         ItemSelectEvent event = new ItemSelectEvent(this, itemId, newStart, newEnd, fromClient);
         RuntimeException exception = null;
 
@@ -529,9 +528,20 @@ public class Timeline extends Div {
         }
     }//
 
-    protected void fireGroupSelectEvent(
-            String groupId, boolean fromClient, boolean isSelectRequest) {
+    protected void fireGroupSelectEvent(String groupId, boolean fromClient, boolean isSelectRequest) {
         GroupItemSelectEvent event = new GroupItemSelectEvent(this, groupId, fromClient, isSelectRequest);
+        RuntimeException exception = null;
+
+        try {
+            fireEvent(event);
+        } catch (RuntimeException e) {
+            exception = e;
+            event.setCancelled(true);
+        }
+    }//
+
+    protected void fireGroupClickEvent(String groupId, boolean fromClient) {
+        GroupClickEvent event = new GroupClickEvent(this, groupId, fromClient);
         RuntimeException exception = null;
 
         try {
@@ -831,6 +841,11 @@ public class Timeline extends Div {
     }
 
     @ClientCallable
+    public void onGroupSelected(String groupId) {
+        fireGroupClickEvent(groupId, true);
+    }
+
+    @ClientCallable
     public void onSelectItemInGroup(String groupId) {
         fireGroupSelectEvent(groupId, true, true);
     }
@@ -885,8 +900,8 @@ public class Timeline extends Div {
         addListener(ItemsDragAndDropEvent.class, listener);
     }
 
-    public void addGroupItemClickListener(ComponentEventListener<GroupItemSelectEvent> listener) {
-        addListener(GroupItemSelectEvent.class, listener);
+    public void addGroupClickListener(ComponentEventListener<GroupClickEvent> listener) {
+        addListener(GroupClickEvent.class, listener);
     }
 
     public void addItemAddListener(ComponentEventListener<ItemAddEvent> listener) {

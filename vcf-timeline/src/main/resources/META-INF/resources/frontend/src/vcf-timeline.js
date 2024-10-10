@@ -169,7 +169,7 @@ window.vcftimeline = {
             let itemSet = container.timeline._timeline.itemSet;
             let temp = itemSet.groupFromTarget(properties.srcEvent);
             group = itemSet.groupsData.get(temp.groupId);
-//            container.$server.onSelectItemInGroup(group.id);
+            container.$server.onGroupSelected(group.id);
             if (!group.nestedGroups)
                 this._updateGroupClassName(container, group, "vis-group-selected");
             else
