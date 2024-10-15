@@ -20,22 +20,6 @@
     width: auto;
 }
 
-.timeline .vis-item.bg-error {
-    background: red;
-}
-
-.timeline .vis-item.bg-success {
-    background: blue;
-}
-
-.timeline .vis-item.bg-warning {
-    background: yellow;
-}
-
-.vis-label.vis-group-selected {
-	border: white 3px solid !important;
-}
-
 .vis-grid-highlighted {
     /*background-color: rgba(255, 0, 0, 0.2) !important;*/
     border-left: 2px solid red !important;
