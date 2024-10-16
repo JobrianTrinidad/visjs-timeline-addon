@@ -51,6 +51,8 @@ public class Item {
 
   private String style;
 
+  private Boolean selectable;
+
   public Item() {}
 
   public Item(LocalDateTime start, LocalDateTime end) {
@@ -162,6 +164,14 @@ public class Item {
     this.style = style;
   }
 
+  public Boolean getSelectable() {
+    return selectable;
+  }
+
+  public void setSelectable(Boolean selectable) {
+    this.selectable = selectable;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(id);
@@ -183,6 +193,7 @@ public class Item {
     Optional.ofNullable(getStart()).ifPresent(v -> js.put("start", v.toString()));
     Optional.ofNullable(getEnd()).ifPresent(v -> js.put("end", v.toString()));
     Optional.ofNullable(getGroup()).ifPresent(v -> js.put("group", v));
+    Optional.ofNullable(getSelectable()).ifPresent(v -> js.put("selectable", v));
 
     Optional.ofNullable(getEditable())
         .ifPresent(
