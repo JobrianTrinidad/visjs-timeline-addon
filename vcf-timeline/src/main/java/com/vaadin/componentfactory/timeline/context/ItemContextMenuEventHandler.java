@@ -56,12 +56,9 @@ public class ItemContextMenuEventHandler {
 
     /**
      * Constructs a new TimeLineContextHandler with the specified timeline.
-     *
-     * @param timeline the timeline component that this handler will manage
      */
-    public ItemContextMenuEventHandler(Timeline timeline) {
+    public ItemContextMenuEventHandler() {
         contextMenu = new ContextMenu();
-        this.timeline = timeline;
     }
 
     /**

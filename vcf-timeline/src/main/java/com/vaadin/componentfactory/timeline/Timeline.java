@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
 @CssImport("./styles/mytimeline.css")
 public class Timeline extends Div {
 
-    private ItemContextMenuEventHandler timeLineItemContextHandler = new ItemContextMenuEventHandler(this);
+    private ItemContextMenuEventHandler timeLineItemContextHandler;
 
     private List<Item> items = new ArrayList<>();
     private List<ItemGroup> itemGroups = new ArrayList<>();
@@ -981,6 +981,8 @@ public class Timeline extends Div {
 
     public void setTimeLineContextHandler(ItemContextMenuEventHandler timeLineItemContextHandler) {
         this.timeLineItemContextHandler = timeLineItemContextHandler;
+        if (this.timeLineItemContextHandler != null)
+            this.timeLineItemContextHandler.setTimeline(this);
     }
 
     public void addItemContextForm(String htmlContent, String htmlStyle, boolean isSubmitForm, IContextFormEventHandler contextFormEventHandler) {

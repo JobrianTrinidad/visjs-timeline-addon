@@ -7,7 +7,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>vcf-timeline</module>
-        <module>vcf-timeline-demo</module>
+<!--        <module>vcf-timeline-demo</module>-->
     </modules>
     <name>timeline</name>
     <description>timeline component based on vis-timeline library</description>
