@@ -20,37 +20,51 @@
 package com.vaadin.componentfactory.timeline.event;
 
 import com.vaadin.componentfactory.timeline.Timeline;
+import com.vaadin.componentfactory.timeline.model.ItemGroup;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.html.Div;
+
+import java.util.List;
 
 /**
  * Event is thrown when an group of item's are selected/de-selected
  */
-public class GroupItemSelectEvent extends ComponentEvent<Div> {
+public class GroupItemsSelectEvent extends ComponentEvent<Div> {
 
-    private String groupId;
+    private int groupId;
+
+    List<ItemGroup> selectedGroupList;
+
     private Timeline source;
 
     private boolean cancelled = false;
 
     private boolean isSelectRequest = true;
 
-    public GroupItemSelectEvent(
-            Timeline source,
-            String groupId,
-            boolean fromClient, boolean isSelectRequest) {
+    public GroupItemsSelectEvent(Timeline source, List<ItemGroup> selectedGroupList, int groupId, boolean fromClient, boolean isSelectRequest) {
         super(source, fromClient);
+        this.selectedGroupList = selectedGroupList;
         this.groupId = groupId;
         this.source = source;
         this.isSelectRequest = isSelectRequest;
     }
 
-    public String getGroupId() {
+    public List<ItemGroup> getSelectedGroupList() {
+        return selectedGroupList;
+    }
+
+    public void setSelectedGroupList(List<ItemGroup> selectedGroupList) {
+        this.selectedGroupList = selectedGroupList;
+    }
+
+    public int getGroupId() {
         return groupId;
     }
-    public void setGroupId(String groupId) {
+
+    public void setGroupId(int groupId) {
         this.groupId = groupId;
     }
+
     public boolean isCancelled() {
         return cancelled;
     }

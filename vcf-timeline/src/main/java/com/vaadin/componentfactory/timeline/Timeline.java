@@ -20,6 +20,8 @@
 
 package com.vaadin.componentfactory.timeline;
 
+import com.vaadin.componentfactory.timeline.context.IContextFormEventHandler;
+import com.vaadin.componentfactory.timeline.context.ItemContextMenuEventHandler;
 import com.vaadin.componentfactory.timeline.event.*;
 import com.vaadin.componentfactory.timeline.model.*;
 import com.vaadin.componentfactory.timeline.util.TimelineUtil;
@@ -53,6 +55,8 @@ import java.util.stream.Collectors;
 @CssImport("vis-timeline/styles/vis-timeline-graph2d.min.css")
 @CssImport("./styles/mytimeline.css")
 public class Timeline extends Div {
+
+    private ItemContextMenuEventHandler timeLineItemContextHandler = new ItemContextMenuEventHandler(this);
 
     private List<Item> items = new ArrayList<>();
     private List<ItemGroup> itemGroups = new ArrayList<>();
@@ -124,6 +128,10 @@ public class Timeline extends Div {
         return this.items != null
                 ? this.items.stream().map(item -> item.toJSON()).collect(Collectors.joining(","))
                 : "";
+    }
+
+    public List<ItemGroup> getItemGroups() {
+        return itemGroups;
     }
 
     private String convertGroupItemsToJson() {
@@ -504,6 +512,18 @@ public class Timeline extends Div {
         fireItemSelectEvent(itemId, LocalDateTime.now(), LocalDateTime.now(), true);
     }
 
+    protected void fireGroupItemsSelectEvent(List<ItemGroup> selectedGroupList, int groupId, boolean isSelectRequest) {
+        GroupItemsSelectEvent event = new GroupItemsSelectEvent(this, selectedGroupList, groupId, true, isSelectRequest);
+        RuntimeException exception = null;
+
+        try {
+            fireEvent(event);
+        } catch (RuntimeException e) {
+            exception = e;
+            event.setCancelled(true);
+        }
+    }//
+
     public void setSelectGroup(String groupID) {
         this.getElement().executeJs("vcftimeline.onSelectGroup($0, $1)", this, groupID);
     }
@@ -528,8 +548,8 @@ public class Timeline extends Div {
         }
     }//
 
-    protected void fireGroupSelectEvent(String groupId, boolean fromClient, boolean isSelectRequest) {
-        GroupItemSelectEvent event = new GroupItemSelectEvent(this, groupId, fromClient, isSelectRequest);
+    protected void fireGroupClickEvent(String groupId) {
+        GroupClickEvent event = new GroupClickEvent(this, groupId, true);
         RuntimeException exception = null;
 
         try {
@@ -540,15 +560,14 @@ public class Timeline extends Div {
         }
     }//
 
-    protected void fireGroupClickEvent(String groupId, boolean fromClient) {
-        GroupClickEvent event = new GroupClickEvent(this, groupId, fromClient);
+    protected void fireGroupZoomEvent(int groupId) {
+        GroupZoomEvent event = new GroupZoomEvent(this, groupId, true);
         RuntimeException exception = null;
 
         try {
             fireEvent(event);
         } catch (RuntimeException e) {
             exception = e;
-            event.setCancelled(true);
         }
     }//
 
@@ -765,12 +784,16 @@ public class Timeline extends Div {
     }
 
     /**
-     * Adds a listener for {@link ItemSelectEvent} to the component.
+     * Adds a listener for {@link GroupItemsSelectEvent} to the component.
      *
      * @param listener the listener to be added
      */
-    public void addGroupItemSelectListener(ComponentEventListener<GroupItemSelectEvent> listener) {
-        addListener(GroupItemSelectEvent.class, listener);
+    public void addGroupItemsSelectListener(ComponentEventListener<GroupItemsSelectEvent> listener) {
+        addListener(GroupItemsSelectEvent.class, listener);
+    }
+
+    public void addGroupZoomListener(ComponentEventListener<GroupZoomEvent> listener) {
+        addListener(GroupZoomEvent.class, listener);
     }
 
 
@@ -842,17 +865,25 @@ public class Timeline extends Div {
 
     @ClientCallable
     public void onGroupSelected(String groupId) {
-        fireGroupClickEvent(groupId, true);
+        fireGroupClickEvent(groupId);
     }
 
-    @ClientCallable
-    public void onSelectItemInGroup(String groupId) {
-        fireGroupSelectEvent(groupId, true, true);
+    public void onSelectItemsInGroup(int groupId) {
+        fireGroupItemsSelectEvent(getSelectedGroupList(), groupId, true);
     }
 
-    @ClientCallable
-    public void onDeselectItemInGroup(String groupId) {
-        fireGroupSelectEvent(groupId, true, false);
+    public void onDeselectItemsInGroup(int groupId) {
+        fireGroupItemsSelectEvent(getSelectedGroupList(), groupId, false);
+    }
+
+    public void onZoomGroup(int groupId) {
+        fireGroupZoomEvent(groupId);
+    }
+
+    private List<ItemGroup> getSelectedGroupList() {
+        return getItemGroups().stream()
+                .filter(itemGroup -> itemGroup != null && itemGroup.isItemsSelected())
+                .toList();
     }
 
     public void onSelectItem(Timeline container, String selectedItemsId, boolean autoZoom) {
@@ -946,5 +977,20 @@ public class Timeline extends Div {
     public void setTooltipOnItemUpdateTimeTemplate(String template) {
         getTimelineOptions().tooltipOnItemUpdateTimeTemplate = template;
         updateTimelineOptions();
+    }
+
+    public void setTimeLineContextHandler(ItemContextMenuEventHandler timeLineItemContextHandler) {
+        this.timeLineItemContextHandler = timeLineItemContextHandler;
+    }
+
+    public void addItemContextForm(String htmlContent, String htmlStyle, boolean isSubmitForm, IContextFormEventHandler contextFormEventHandler) {
+        if (timeLineItemContextHandler != null)
+            timeLineItemContextHandler.addContextItemDialog(htmlContent, htmlStyle, isSubmitForm, contextFormEventHandler);
+    }
+
+    @ClientCallable
+    public void loadContextMenuOptions(int left, int top, int selectedCompID, String componentType) {
+        if (timeLineItemContextHandler != null)
+            timeLineItemContextHandler.loadContextMenu(left, top, selectedCompID, componentType);
     }
 }

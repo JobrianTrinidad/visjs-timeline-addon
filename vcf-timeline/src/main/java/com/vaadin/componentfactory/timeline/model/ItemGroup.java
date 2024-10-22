@@ -44,6 +44,8 @@ public class ItemGroup {
     private boolean visible;
     private String className = "ig-group";
 
+    private boolean isItemsSelected;
+
     public ItemGroup() {
     }
 
@@ -145,5 +147,13 @@ public class ItemGroup {
         Optional.ofNullable(getClassName()).ifPresent(v -> js.put("className", v));
 
         return js.toJson();
+    }
+
+    public boolean isItemsSelected() {
+        return isItemsSelected;
+    }
+
+    public void setItemsSelected(boolean itemsSelected) {
+        isItemsSelected = itemsSelected;
     }
 }

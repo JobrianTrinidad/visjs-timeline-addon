@@ -102,6 +102,7 @@ window.vcftimeline = {
 
         container.timeline = new Arrow(timeline, bGroup);
 
+
         // Save the original toggleGroupShowNested function
         container.timeline._timeline.itemSet._originalToggleGroupShowNested = container.timeline._timeline.itemSet.toggleGroupShowNested;
         // Define your custom toggleGroupShowNested function
@@ -118,7 +119,27 @@ window.vcftimeline = {
         // Overwrite the existing _onGroupClick function
         container.timeline._timeline.itemSet.toggleGroupShowNested = customToggleGroupShowNested.bind(container.timeline._timeline.itemSet);
 
-        let group = null;
+        // Define a variable to reference itemSet
+        const itemSet = container.timeline._timeline.itemSet;
+
+        // Define the custom tap handler
+        const customTapHandler = function(event) {
+            const oldSelection = itemSet.getSelection();  // Get current selection
+            const item = itemSet.itemFromTarget(event);   // Get item from the event target
+
+            // Custom validation: if there's an old selection but no new item
+            if (oldSelection != null && oldSelection.length > 0 && !item) {
+                return;
+            }
+
+            // Call the original _onSelectItem function
+            itemSet._onSelectItem(event);
+        };
+
+        // Overwrite the existing tap handler
+        itemSet.hammer.off("tap");  // Remove the original tap handler
+        itemSet.hammer.on("tap", customTapHandler);  // Set the custom handler
+
         let selectedItems = [];
 
         container.timeline._timeline.on("select", (properties) => {
@@ -166,9 +187,9 @@ window.vcftimeline = {
              if (properties.firstTarget && properties.firstTarget.tagName === 'BUTTON') {
                return;
              }
-            let itemSet = container.timeline._timeline.itemSet;
-            let temp = itemSet.groupFromTarget(properties.srcEvent);
-            group = itemSet.groupsData.get(temp.groupId);
+            const itemSet = container.timeline._timeline.itemSet;
+            const temp = itemSet.groupFromTarget(properties.srcEvent);
+            const group = itemSet.groupsData.get(temp.groupId);
             container.$server.onGroupSelected(group.id);
             if (!group.nestedGroups)
                 this._updateGroupClassName(container, group, "vis-group-selected");
@@ -178,104 +199,32 @@ window.vcftimeline = {
                     this._removeGroupsClassName(container, nestedGroup, "vis-group-unselected");
                 }
             }
-//            console.log("Tap detected", properties);
         });
 
         var selectedGroup = null;
-        // Add a right-click event listener [ itemSet.groupHammer. ]
         container.timeline._timeline.on("contextmenu", (properties) => {
-            // Prevent default browser context menu
+            // Prevent the default context menu
             properties.event.preventDefault();
-
-            // Check if the event is on a button, if so return
-            if (properties && properties.what !== 'group-label') {
-                hideContextMenu();
-                return;
-            }
-
-            // Get group from target
-            let itemSet = container.timeline._timeline.itemSet;
-            let temp = itemSet.groupFromTarget(properties.event);
-            group = itemSet.groupsData.get(temp.groupId);
-            // Show the custom context menu
-            showContextMenu(properties.event, group, selectedGroup === group);
-        });
-
-        // Function to show the custom popup menu
-        function showContextMenu(event, group, isItemsSelected) {
-            // Create a simple menu if not already created
-            let menu = document.getElementById('custom-context-menu');
-            if (!menu) {
-                menu = document.createElement('div');
-                menu.id = 'custom-context-menu';
-                menu.style.position = 'absolute';
-                menu.style.zIndex = 1000;
-                menu.style.background = '#fff';
-                menu.style.border = '1px solid #ccc';
-                menu.style.padding = '5px';
-                document.body.appendChild(menu);
-            } else {
-                // Clear previous menu options
-                menu.innerHTML = '';
-            }
-
-            if(!isItemsSelected)
+            // Get the coordinates of the click
+            const x = properties.event.clientX;
+            const y = properties.event.clientY;
+            const itemSet = container.timeline._timeline.itemSet;
+            if(properties.what === "group-label")
             {
-                // Create "Select Items" option
-                let selectOption = document.createElement('div');
-                selectOption.innerHTML = 'Select Items';
-                selectOption.style.padding = '5px';
-                selectOption.addEventListener('click', () => {
-                    selectItemsInGroup(group);
-                    selectedGroup = group;
-                    hideContextMenu();
-                });
-                menu.appendChild(selectOption);
+                const temp = itemSet.groupFromTarget(properties.event);
+                const group = itemSet.groupsData.get(temp.groupId);
+                container.$server.loadContextMenuOptions(x, y, group.id, "Group");
+            }
+            else if (properties.what === "item")
+            {
+                const item = itemSet.itemFromTarget(properties.event);
+                container.$server.loadContextMenuOptions(x, y, item.id, "Item");
             }
             else
             {
-                // Create "Deselect Items" option
-                let deselectOption = document.createElement('div');
-                deselectOption.innerHTML = 'Deselect Items';
-                deselectOption.style.padding = '5px';
-                deselectOption.addEventListener('click', () => {
-                    deselectItemsInGroup(group);
-                    selectedGroup = null;
-                    hideContextMenu();
-                });
-                menu.appendChild(deselectOption);
+                container.$server.loadContextMenuOptions(x, y, -1, properties.what);
             }
-
-            // Set the position of the menu
-            menu.style.left = `${event.clientX}px`;
-            menu.style.top = `${event.clientY}px`;
-            menu.style.display = 'block';
-
-            // Hide the menu on document click
-            document.addEventListener('click', hideContextMenu);
-        }
-
-        // Hide the context menu
-        function hideContextMenu() {
-            const menu = document.getElementById('custom-context-menu');
-            if (menu) {
-                menu.style.display = 'none';
-            }
-        }
-
-        // Function to select items in the group
-        function selectItemsInGroup(group) {
-            // Your logic to select items in the group
-            container.$server.onSelectItemInGroup(group.id);
-//            console.log("Items selected in group:", group.id);
-        }
-
-        // Function to deselect items in the group
-        function deselectItemsInGroup(group) {
-            // Your logic to deselect items in the group
-            container.$server.onDeselectItemInGroup(group.id);
-//            console.log("Items deselected in group:", group.id);
-        }
+        });
 
         container.timeline._timeline.on('rangechanged', function (properties) {
             const rangeChangedData = {
@@ -775,7 +724,6 @@ window.vcftimeline = {
             }
         }, 100);
     },
-
     _updateMultiSelectionByDragAndDrop(container, startPointTime, endPointTime, startPointY, endPointY) {
 
         let itemSet = container.timeline._timeline.itemSet;
