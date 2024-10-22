@@ -199,15 +199,25 @@ public class ItemGroupsExample extends Div {
                 }
         );
 
-        timeline.addGroupItemClickListener(e -> {
-            StringBuilder temp = new StringBuilder();
-            for (Item item : timeline.getItems()) {
-                if (Integer.parseInt(item.getGroup()) == Integer.parseInt(e.getGroupId())) {
-                    if (!temp.isEmpty())
-                        temp.append(",").append(item.getId());
-                    else
-                        temp.append(item.getId());
+        timeline.addGroupClickListener(e -> {
+            System.out.println(e.toString());
+        });
 
+        timeline.addGroupZoomListener(e -> {
+            System.out.println(e.toString());
+        });
+
+        timeline.addGroupItemsSelectListener(e -> {
+            StringBuilder temp = new StringBuilder();
+            if(e.isSelectRequest()) {
+                for (Item item : timeline.getItems()) {
+                    if (Integer.parseInt(item.getGroup()) == e.getGroupId()) {
+                        if (!temp.isEmpty())
+                            temp.append(",").append(item.getId());
+                        else
+                            temp.append(item.getId());
+
+                    }
                 }
             }
             e.getTimeline().onSelectItem(e.getTimeline(), temp.toString(), false);
