@@ -56,7 +56,6 @@ public class ContextMenu extends Div {
                 .set("border", "1px solid #ccc")
                 .set("padding", "5px")
                 .set("display", "none");
-        UI.getCurrent().getElement().appendChild(getElement());
         // TODO do we keep line-awesome?
         ThemeUtil.setLinkStyleSheet("line-awesome", "https://maxst.icons8.com/vue-static/landings/line-awesome/line-awesome/1.3.0/css/line-awesome.min.css");
         this.getElement().executeJs(" document.addEventListener('click', function(event) {" +
@@ -80,6 +79,9 @@ public class ContextMenu extends Div {
      * @param top  the y-coordinate (in pixels) from the top edge of the screen where the menu should appear
      */
     public void showContextMenu(int left, int top) {
+        if (UI.getCurrent().getElement().getChildren().noneMatch(child -> child.equals(getElement()))) {
+            UI.getCurrent().getElement().appendChild(getElement());
+        }
         getStyle().set("left", left + "px");
         getStyle().set("top", top + "px");
         getStyle().set("display", "block");
