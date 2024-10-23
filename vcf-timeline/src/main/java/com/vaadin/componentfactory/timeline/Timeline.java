@@ -20,7 +20,7 @@
 
 package com.vaadin.componentfactory.timeline;
 
-import com.vaadin.componentfactory.timeline.context.IContextFormEventHandler;
+import com.vaadin.componentfactory.timeline.context.ContextFormEventHandler;
 import com.vaadin.componentfactory.timeline.context.ItemContextMenuEventHandler;
 import com.vaadin.componentfactory.timeline.event.*;
 import com.vaadin.componentfactory.timeline.model.*;
@@ -985,9 +985,12 @@ public class Timeline extends Div {
             this.timeLineItemContextHandler.setTimeline(this);
     }
 
-    public void addItemContextForm(String htmlContent, String htmlStyle, boolean isSubmitForm, IContextFormEventHandler contextFormEventHandler) {
-        if (timeLineItemContextHandler != null)
+    public void addItemContextForm(String htmlContent, String htmlStyle, boolean isSubmitForm, ContextFormEventHandler contextFormEventHandler) {
+        if (timeLineItemContextHandler != null) {
+            if (contextFormEventHandler != null)
+                contextFormEventHandler.setTimeline(this);
             timeLineItemContextHandler.addContextItemDialog(htmlContent, htmlStyle, isSubmitForm, contextFormEventHandler);
+        }
     }
 
     @ClientCallable

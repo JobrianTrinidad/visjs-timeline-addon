@@ -172,7 +172,7 @@ public class ItemContextMenuEventHandler {
      * @param isSubmitForm            whether the form includes a submit button
      * @param contextFormEventHandler the event handler for managing form events
      */
-    public void addContextItemDialog(String htmlContent, String htmlStyle, boolean isSubmitForm, IContextFormEventHandler contextFormEventHandler) {
+    public void addContextItemDialog(String htmlContent, String htmlStyle, boolean isSubmitForm, ContextFormEventHandler contextFormEventHandler) {
         dialog = new ContextItemDialog(htmlContent, htmlStyle, isSubmitForm);
         dialog.setContextFormEventHandler(contextFormEventHandler);
     }

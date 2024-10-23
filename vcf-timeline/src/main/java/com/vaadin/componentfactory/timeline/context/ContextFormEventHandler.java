@@ -20,14 +20,30 @@ package com.vaadin.componentfactory.timeline.context;
  * #L%
  */
 
+import com.vaadin.componentfactory.timeline.Timeline;
+
 import java.util.Map;
 
 /**
- * The IContextFormEventHandler interface defines the contract for handling various form-related
+ * The ContextFormEventHandler abstract class defines the contract for handling various form-related
  * events, such as input changes, button clicks, content parsing, and form submissions.
  * Implementations of this interface provide specific behavior for these events in a form context.
  */
-public interface IContextFormEventHandler {
+public abstract class ContextFormEventHandler {
+
+    protected Timeline timeline;
+
+    public ContextFormEventHandler() {
+        super();
+    }
+
+    public Timeline getTimeline() {
+        return timeline;
+    }
+
+    public void setTimeline(Timeline timeline) {
+        this.timeline = timeline;
+    }
 
     /**
      * Handles the change event of a form input field.
@@ -39,7 +55,8 @@ public interface IContextFormEventHandler {
      * @param value  the new value of the input field after the change event.
      * @param itemId the identifier of the item being processed in the form.
      */
-    public void onInputChange(String key, String value, int itemId);
+    public abstract void onInputChange(String key, String value, int itemId);
+
 
     /**
      * Handles a button click event.
@@ -49,7 +66,7 @@ public interface IContextFormEventHandler {
      * @param key    the identifier of the button that was clicked.
      * @param itemId the identifier of the item being processed in the form.
      */
-    public void onClickButton(String key, int itemId);
+    public abstract void onClickButton(String key, int itemId);
 
     /**
      * Parses content related to a specific item.
@@ -61,7 +78,7 @@ public interface IContextFormEventHandler {
      * @param itemId  the identifier of the item for which the content needs to be parsed.
      * @return the parsed content as a String.
      */
-    public String parsedContent(String content, int itemId);
+    public abstract String parsedContent(String content, int itemId);
 
     /**
      * Handles the submission of form data.
@@ -73,6 +90,6 @@ public interface IContextFormEventHandler {
      *                    and values represent the corresponding field values.
      * @param itemId      the identifier of the item being processed in the form.
      */
-    public void onSubmitForm(Map<String, Object> formDataMap, int itemId);
-}
+    public abstract void onSubmitForm(Map<String, Object> formDataMap, int itemId);
 
+}

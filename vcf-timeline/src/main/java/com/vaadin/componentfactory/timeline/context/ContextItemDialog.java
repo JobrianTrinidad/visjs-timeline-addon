@@ -54,7 +54,7 @@ public class ContextItemDialog extends Dialog {
     protected String htmlStyle;
 
     protected Button submitBtn;
-    protected IContextFormEventHandler eventHandler;
+    protected ContextFormEventHandler eventHandler;
 
     /**
      * Constructs a ContextFormDialog.
@@ -71,6 +71,7 @@ public class ContextItemDialog extends Dialog {
 
         // Adds a close button to the dialog.
         Button closeButton = new Button("X", event -> close());
+        closeButton.setClassName("context-dialog-close-button");
         // Styles the close button.
         closeButton.getStyle()
                 .set("position", "absolute")
@@ -78,9 +79,9 @@ public class ContextItemDialog extends Dialog {
                 .set("right", "10px")
                 .set("cursor", "pointer")
                 .set("background", "none")
-                .set("border", "none")
+                .set("border", "none !important")
                 .set("font-size", "20px")
-                .set("color", "#ff0000");
+                .set("color", "#ff0000 !important");
 
         vcontent = new VerticalLayout();
         contentDiv = new Div();
@@ -89,6 +90,7 @@ public class ContextItemDialog extends Dialog {
         vcontent.add(contentDiv);
         if (isSubmitForm) {
             submitBtn = new Button("OK", event -> addProcessFormSubmitListener());
+            submitBtn.setClassName("context-dialog-close-button");
             submitBtn.getStyle()
                     .set("margin-top", "5px")
                     .set("align-self", "center");
@@ -298,7 +300,7 @@ public class ContextItemDialog extends Dialog {
      *
      * @param eventHandler The event handler to be set.
      */
-    public void setContextFormEventHandler(IContextFormEventHandler eventHandler) {
+    public void setContextFormEventHandler(ContextFormEventHandler eventHandler) {
         this.eventHandler = eventHandler;
     }
 
