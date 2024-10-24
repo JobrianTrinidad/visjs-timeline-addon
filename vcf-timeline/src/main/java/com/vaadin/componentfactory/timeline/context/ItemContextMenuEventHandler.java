@@ -107,6 +107,7 @@ public class ItemContextMenuEventHandler {
                     contextMenu.hideContextMenu();
                 });
                 contextMenu.add(deSelectOption);
+                contextMenu.showContextMenu(left, top);
             } else {
                 ContextMenuItem selectOption = new ContextMenuItem("las la-stop", "Select Item", event -> {
                     groupItems.setItemsSelected(true);
@@ -114,6 +115,7 @@ public class ItemContextMenuEventHandler {
                     contextMenu.hideContextMenu();
                 });
                 contextMenu.add(selectOption);
+                contextMenu.showContextMenu(left, top);
             }
             if (isGroupZoomable()) {
                 ContextMenuItem zoomOption = new ContextMenuItem("las la-search", "Zoom Item", event -> {
