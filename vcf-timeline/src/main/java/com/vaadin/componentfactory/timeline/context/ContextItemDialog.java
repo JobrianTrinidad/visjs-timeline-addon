@@ -78,7 +78,7 @@ public class ContextItemDialog extends Dialog {
                 .set("top", "10px")
                 .set("right", "10px")
                 .set("cursor", "pointer")
-                .set("background", "none")
+                .set("background", "none !important")
                 .set("border", "none !important")
                 .set("font-size", "20px")
                 .set("color", "#ff0000 !important");
