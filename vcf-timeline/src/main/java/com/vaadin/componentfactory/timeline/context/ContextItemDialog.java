@@ -20,7 +20,6 @@ package com.vaadin.componentfactory.timeline.context;
  * #L%
  */
 
-import com.vaadin.componentfactory.timeline.util.ThemeUtil;
 import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -31,6 +30,7 @@ import elemental.json.Json;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -321,8 +321,8 @@ public class ContextItemDialog extends Dialog {
         updateContent();
     }
 
-    public boolean isvalid() {
-    return  util.htmlContent
+    public boolean isValid() {
+        return StringUtils.hasLength(htmlContent);
     }
 }
 

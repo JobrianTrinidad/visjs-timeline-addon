@@ -44,6 +44,8 @@ public class ItemContextMenuEventHandler {
      */
     protected ContextMenu contextMenu;
 
+    protected boolean isGroupZoomable = true;
+
     /**
      * The timeline component being managed.
      */
@@ -113,13 +115,14 @@ public class ItemContextMenuEventHandler {
                 });
                 contextMenu.add(selectOption);
             }
-
-            ContextMenuItem zoomOption = new ContextMenuItem("las la-search", "Zoom Item", event -> {
-                timeline.onZoomGroup(selectedGroupID);
-                contextMenu.hideContextMenu();
-            });
-            contextMenu.add(zoomOption);
-            contextMenu.showContextMenu(left, top);
+            if (isGroupZoomable()) {
+                ContextMenuItem zoomOption = new ContextMenuItem("las la-search", "Zoom Item", event -> {
+                    timeline.onZoomGroup(selectedGroupID);
+                    contextMenu.hideContextMenu();
+                });
+                contextMenu.add(zoomOption);
+                contextMenu.showContextMenu(left, top);
+            }
         } else {
             contextMenu.hideContextMenu();
         }
@@ -133,7 +136,7 @@ public class ItemContextMenuEventHandler {
      * @param selectedItemID the ID of the selected item in the timeline
      */
     protected void loadItemsContextMenu(int left, int top, int selectedItemID) {
-        if (dialog != null && dialog.isvalid()) {
+        if (dialog != null && dialog.isValid()) {
             dialog.setItemId(selectedItemID);
             dialog.open();
         }
@@ -172,4 +175,13 @@ public class ItemContextMenuEventHandler {
     public void addContextItemDialog(ContextFormEventHandler contextFormEventHandler) {
         dialog = new ContextItemDialog(contextFormEventHandler);
     }
+
+    public boolean isGroupZoomable() {
+        return isGroupZoomable;
+    }
+
+    public void setGroupZoomable(boolean groupZoomable) {
+        isGroupZoomable = groupZoomable;
+    }
+
 }
