@@ -57,17 +57,24 @@ public class ContextItemDialog extends Dialog {
     protected ContextFormEventHandler eventHandler;
 
     /**
-     * Constructs a ContextFormDialog.
+     * Constructs a {@code ContextItemDialog} with the specified event handler.
      *
-     * @param htmlContent  The HTML content to be displayed in the dialog.
-     * @param htmlStyle    The custom CSS styles to be applied to the dialog content.
-     * @param isSubmitForm If true, adds an "OK" button for form submission.
+     * <p>This constructor initializes the dialog with the necessary settings
+     * and content based on the provided {@code ContextFormEventHandler}.
+     * The dialog will close when the user clicks outside of it. It retrieves
+     * HTML content and style, and sets the form submission behavior based on
+     * the event handler configuration.</p>
+     *
+     * @param eventHandler the event handler that provides the HTML content,
+     *                     style, and submission behavior for the dialog.
+     *                     This handler should not be {@code null}.
      */
-    public ContextItemDialog(String htmlContent, String htmlStyle, boolean isSubmitForm) {
+    public ContextItemDialog(ContextFormEventHandler eventHandler) {
         setCloseOnOutsideClick(true);
-        this.htmlContent = htmlContent;
-        this.htmlStyle = htmlStyle;
-        this.isSubmitForm = isSubmitForm;
+        this.eventHandler = eventHandler;
+        this.htmlContent = eventHandler.getHtmlContent();
+        this.htmlStyle = eventHandler.getHtmlStyle();
+        this.isSubmitForm = eventHandler.isSubmitForm();
 
         // Adds a close button to the dialog.
         Button closeButton = new Button("X", event -> close());
@@ -312,6 +319,10 @@ public class ContextItemDialog extends Dialog {
     public void setItemId(int itemId) {
         this.itemId = itemId;
         updateContent();
+    }
+
+    public boolean isvalid() {
+    return  util.htmlContent
     }
 }
 

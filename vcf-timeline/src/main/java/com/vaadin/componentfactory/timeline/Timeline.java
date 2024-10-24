@@ -985,11 +985,10 @@ public class Timeline extends Div {
             this.timeLineItemContextHandler.setTimeline(this);
     }
 
-    public void addItemContextForm(String htmlContent, String htmlStyle, boolean isSubmitForm, ContextFormEventHandler contextFormEventHandler) {
-        if (timeLineItemContextHandler != null) {
-            if (contextFormEventHandler != null)
+    public void addItemContextForm(ContextFormEventHandler contextFormEventHandler) {
+        if (timeLineItemContextHandler != null && contextFormEventHandler != null) {
                 contextFormEventHandler.setTimeline(this);
-            timeLineItemContextHandler.addContextItemDialog(htmlContent, htmlStyle, isSubmitForm, contextFormEventHandler);
+            timeLineItemContextHandler.addContextItemDialog(contextFormEventHandler);
         }
     }
 

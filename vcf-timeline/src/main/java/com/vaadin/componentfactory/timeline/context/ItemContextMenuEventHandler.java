@@ -133,7 +133,7 @@ public class ItemContextMenuEventHandler {
      * @param selectedItemID the ID of the selected item in the timeline
      */
     protected void loadItemsContextMenu(int left, int top, int selectedItemID) {
-        if (dialog != null) {
+        if (dialog != null && dialog.isvalid()) {
             dialog.setItemId(selectedItemID);
             dialog.open();
         }
@@ -167,13 +167,9 @@ public class ItemContextMenuEventHandler {
      * and options to show a submit button and status bar. This method allows interaction with
      * a form event handler for handling form events.
      *
-     * @param htmlContent             the HTML content to display in the form
-     * @param htmlStyle               the CSS style to apply to the form
-     * @param isSubmitForm            whether the form includes a submit button
      * @param contextFormEventHandler the event handler for managing form events
      */
-    public void addContextItemDialog(String htmlContent, String htmlStyle, boolean isSubmitForm, ContextFormEventHandler contextFormEventHandler) {
-        dialog = new ContextItemDialog(htmlContent, htmlStyle, isSubmitForm);
-        dialog.setContextFormEventHandler(contextFormEventHandler);
+    public void addContextItemDialog(ContextFormEventHandler contextFormEventHandler) {
+        dialog = new ContextItemDialog(contextFormEventHandler);
     }
 }

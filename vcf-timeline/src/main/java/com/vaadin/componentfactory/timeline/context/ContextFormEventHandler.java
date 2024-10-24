@@ -9,9 +9,9 @@ package com.vaadin.componentfactory.timeline.context;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,9 +32,19 @@ import java.util.Map;
 public abstract class ContextFormEventHandler {
 
     protected Timeline timeline;
+    protected String htmlContent;
+    protected String htmlStyle;
+
+    protected boolean isSubmitForm = true;
 
     public ContextFormEventHandler() {
         super();
+    }
+
+    public ContextFormEventHandler(String htmlContent, String htmlStyle, boolean isSubmitForm) {
+        this.htmlContent = htmlContent;
+        this.htmlStyle = htmlStyle;
+        this.isSubmitForm = isSubmitForm;
     }
 
     public Timeline getTimeline() {
@@ -43,6 +53,31 @@ public abstract class ContextFormEventHandler {
 
     public void setTimeline(Timeline timeline) {
         this.timeline = timeline;
+    }
+
+
+    public String getHtmlContent() {
+        return htmlContent;
+    }
+
+    public void setHtmlContent(String htmlContent) {
+        this.htmlContent = htmlContent;
+    }
+
+    public String getHtmlStyle() {
+        return htmlStyle;
+    }
+
+    public void setHtmlStyle(String htmlStyle) {
+        this.htmlStyle = htmlStyle;
+    }
+
+    public boolean isSubmitForm() {
+        return isSubmitForm;
+    }
+
+    public void setSubmitForm(boolean submitForm) {
+        isSubmitForm = submitForm;
     }
 
     /**
