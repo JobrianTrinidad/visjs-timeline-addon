@@ -51,6 +51,7 @@ public class Item {
 
   private String style;
 
+  private String subgroup;
   private Boolean selectable;
 
   public Item() {}
@@ -172,6 +173,14 @@ public class Item {
     this.selectable = selectable;
   }
 
+  public String getSubgroup() {
+    return subgroup;
+  }
+
+  public void setSubgroup(String subgroup) {
+    this.subgroup = subgroup;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(id);
@@ -193,6 +202,7 @@ public class Item {
     Optional.ofNullable(getStart()).ifPresent(v -> js.put("start", v.toString()));
     Optional.ofNullable(getEnd()).ifPresent(v -> js.put("end", v.toString()));
     Optional.ofNullable(getGroup()).ifPresent(v -> js.put("group", v));
+    Optional.ofNullable(getSubgroup()).ifPresent(v -> js.put("subgroup", v));
     Optional.ofNullable(getSelectable()).ifPresent(v -> js.put("selectable", v));
 
     Optional.ofNullable(getEditable())
