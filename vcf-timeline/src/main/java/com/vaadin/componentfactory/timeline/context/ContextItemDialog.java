@@ -117,7 +117,9 @@ public class ContextItemDialog extends Dialog {
             setStyle(htmlStyle);
         }
         if (eventHandler != null) {
-            submitBtn.setVisible(isSubmitForm);
+            if (submitBtn != null) {
+                submitBtn.setVisible(isSubmitForm);
+            }
             addInputOnChangeListener();
             addButtonClickListener();
         }
