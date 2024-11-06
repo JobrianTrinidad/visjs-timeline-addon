@@ -42,6 +42,7 @@ public class ItemGroup {
     private String nestedGroups;
 
     private boolean visible;
+    private boolean subgroupStack = false;
     private String className = "ig-group";
 
     private boolean isItemsSelected;
@@ -127,6 +128,13 @@ public class ItemGroup {
         this.treeLevel = treeLevel;
     }
 
+    public boolean isSubgroupStack() {
+        return subgroupStack;
+    }
+
+    public void setSubgroupStack(boolean subgroupStack) {
+        this.subgroupStack = subgroupStack;
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -144,6 +152,7 @@ public class ItemGroup {
         Optional.of(getTreeLevel()).ifPresent(v -> js.put("treeLevel", v));
         Optional.ofNullable(getNestedGroups()).ifPresent(v -> js.put("nestedGroups", v));
         Optional.of(isVisible()).ifPresent(v -> js.put("visible", v));
+        Optional.of(isSubgroupStack()).ifPresent(v -> js.put("subgroupStack", v));
         Optional.ofNullable(getClassName()).ifPresent(v -> js.put("className", v));
 
         return js.toJson();

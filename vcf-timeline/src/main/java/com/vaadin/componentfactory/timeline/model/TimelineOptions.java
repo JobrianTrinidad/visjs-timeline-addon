@@ -79,6 +79,8 @@ public class TimelineOptions {
   /* If false items will not be stacked on top of each other such that they overlap. */
   public boolean stack = false;
 
+  public boolean stackSubgroups = false;
+
   /* The initial start date for the axis of the timeline.
    * If not provided, the earliest date present in the events is taken as start date. */
   public LocalDateTime start;
@@ -137,6 +139,7 @@ public class TimelineOptions {
     Optional.ofNullable(height).ifPresent(v -> js.put("height", v));
     Optional.ofNullable(maxHeight).ifPresent(v -> js.put("maxHeight", v));
     js.put("stack", stack);
+    js.put("stackSubgroups", stackSubgroups);
     Optional.ofNullable(start).ifPresent(v -> js.put("start", v.toString()));
     Optional.ofNullable(end).ifPresent(v -> js.put("end", v.toString()));
     js.put("multiselect", multiselect);
