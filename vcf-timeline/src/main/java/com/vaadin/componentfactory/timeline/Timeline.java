@@ -385,6 +385,11 @@ public class Timeline extends Div {
         updateTimelineOptions();
     }
 
+    public void setStackSubgroups(boolean stackSubgroups) {
+        getTimelineOptions().stackSubgroups = stackSubgroups;
+        updateTimelineOptions();
+    }
+
     public void setVerticalScroll(boolean verticalScroll) {
         getTimelineOptions().verticalScroll = verticalScroll;
         updateTimelineOptions();
