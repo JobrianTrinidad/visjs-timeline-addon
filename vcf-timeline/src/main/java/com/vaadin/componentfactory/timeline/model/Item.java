@@ -52,6 +52,7 @@ public class Item {
   private String style;
 
   private String subgroup;
+  private int subgroupOrder;
   private Boolean selectable;
 
   public Item() {}
@@ -181,6 +182,11 @@ public class Item {
     this.subgroup = subgroup;
   }
 
+  public void setSubgroup(String subgroup, int subgroupOrder) {
+    this.subgroup = subgroup;
+    this.subgroupOrder = subgroupOrder;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(id);
@@ -204,6 +210,7 @@ public class Item {
     Optional.ofNullable(getGroup()).ifPresent(v -> js.put("group", v));
     Optional.ofNullable(getSubgroup()).ifPresent(v -> js.put("subgroup", v));
     Optional.ofNullable(getSelectable()).ifPresent(v -> js.put("selectable", v));
+    Optional.of(getSubgroupOrder()).ifPresent(v -> js.put("subgroupOrder", v));
 
     Optional.ofNullable(getEditable())
         .ifPresent(
@@ -222,5 +229,13 @@ public class Item {
     Optional.ofNullable(getClassName()).ifPresent(v -> js.put("className", v));
     Optional.ofNullable(getStyle()).ifPresent(v -> js.put("style", v));
     return js.toJson();
+  }
+
+  public int getSubgroupOrder() {
+    return subgroupOrder;
+  }
+
+  public void setSubgroupOrder(int subgroupOrder) {
+    this.subgroupOrder = subgroupOrder;
   }
 }

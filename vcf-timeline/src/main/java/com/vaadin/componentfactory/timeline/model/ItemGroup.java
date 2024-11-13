@@ -23,7 +23,10 @@ package com.vaadin.componentfactory.timeline.model;
 import com.vaadin.flow.component.Tag;
 import elemental.json.Json;
 import elemental.json.JsonObject;
+import org.apache.commons.lang3.StringUtils;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -32,6 +35,8 @@ import java.util.Optional;
  */
 @Tag("ItemGroup")
 public class ItemGroup {
+
+    private static final String SUBGROUP_ORDER_FUNCTION = "function (a,b) {return a.subgroupOrder - b.subgroupOrder;}";
 
     private int groupId;
 
@@ -46,6 +51,10 @@ public class ItemGroup {
     private String className = "ig-group";
 
     private boolean isItemsSelected;
+
+    private Map<String, Boolean> subgroupStackMap = new HashMap<>();
+
+    private String subgroupOrder;
 
     public ItemGroup() {
     }
@@ -136,6 +145,19 @@ public class ItemGroup {
         this.subgroupStack = subgroupStack;
     }
 
+    public Map<String, Boolean> getSubgroupStackMap() {
+        return subgroupStackMap;
+    }
+
+    public void setSubgroupStackMap(Map<String, Boolean> subgroupStackMap) {
+        this.subgroupStackMap = subgroupStackMap;
+    }
+
+
+    public void addStackSubgroup(String name, boolean stackValue) {
+        subgroupStackMap.put(name, stackValue);
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
@@ -153,6 +175,12 @@ public class ItemGroup {
         Optional.ofNullable(getNestedGroups()).ifPresent(v -> js.put("nestedGroups", v));
         Optional.of(isVisible()).ifPresent(v -> js.put("visible", v));
         Optional.of(isSubgroupStack()).ifPresent(v -> js.put("subgroupStack", v));
+        if (!getSubgroupStackMap().isEmpty()) {
+            JsonObject subgroupStackBuilder = Json.createObject();
+            getSubgroupStackMap().forEach(subgroupStackBuilder::put); // adds each entry in the map to the builder
+            js.put("subgroupStack", subgroupStackBuilder);
+            js.put("subgroupOrder", StringUtils.isEmpty(getSubgroupOrder()) ? SUBGROUP_ORDER_FUNCTION : getSubgroupOrder());
+        }
         Optional.ofNullable(getClassName()).ifPresent(v -> js.put("className", v));
 
         return js.toJson();
@@ -164,5 +192,13 @@ public class ItemGroup {
 
     public void setItemsSelected(boolean itemsSelected) {
         isItemsSelected = itemsSelected;
+    }
+
+    public String getSubgroupOrder() {
+        return subgroupOrder;
+    }
+
+    public void setSubgroupOrder(String subgroupOrder) {
+        this.subgroupOrder = subgroupOrder;
     }
 }

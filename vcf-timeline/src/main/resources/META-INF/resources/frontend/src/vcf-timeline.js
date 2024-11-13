@@ -60,6 +60,8 @@ window.vcftimeline = {
                     nestedGroups: groupsNested,
                     visible: parsedGroupItems[i].visible,
                     className: parsedGroupItems[i].className,
+                    subgroupOrder: parsedGroupItems[i].subgroupOrder,
+                    subgroupStack: parsedGroupItems[i].subgroupStack,
                 });
             }
             items = new DataSet();
@@ -74,6 +76,8 @@ window.vcftimeline = {
                 items.add({
                     id: parsedItems[i].id,
                     group: parsedItems[i].group,
+                    subgroup: parsedItems[i].subgroup,
+                    subgroupOrder: parsedItems[i].subgroupOrder,
                     content: parsedItems[i].content,
                     start: parsedItems[i].start,
                     end: parsedItems[i].end,
@@ -94,6 +98,7 @@ window.vcftimeline = {
         } else items = new DataSet(parsedItems);
         // // Get options for timeline configuration
         let options = this._processOptions(container, optionsJson);
+
         // Create Timeline
         let timeline;
         if (bGroup) {
@@ -314,33 +319,27 @@ window.vcftimeline = {
             const TOP_OFFSET_PX = '5px';
 
             if (items.length > 0) {
+                let margin = items[0].options.margin;
+
+                for (let i = 0; i < items.length; i++) {
+                    items[i].top = null;
+                }
+
                 if (items[0].dom?.box) {
                     items[0].dom.box.style.top = TOP_OFFSET_PX;
+                    items[0].top = parseInt(TOP_OFFSET_PX);
                 }
 
                 for (let i = 1; i < items.length; i++) {
                     const current = items[i];
-                    const previous = items[i - 1];
+                    if (current.dom?.box ) {// &&
+                        findPreviousItem(items, current, margin, OFFSET)
+                        current.dom.box.style.top = current.top + 'px';
+                    }
 
-                    if (current.dom?.box && previous.dom?.box) {
-                        const currentStart = current.data.start.getTime();
-                        const previousEnd = previous.data.end.getTime();
-
-                        if (currentStart === previousEnd) {
-                            if (!previous.dom.box.style.top) {
-                                previous.dom.box.style.top = TOP_OFFSET_PX;
-                                current.dom.box.style.top = TOP_OFFSET_PX;
-                            } else {
-                                current.dom.box.style.top = previous.dom.box.style.top;
-                            }
-                        } else {
-                            current.dom.box.style.top = findTopValue(current, i - 1, items, OFFSET);
-                        }
-
-                        const currentTop = current.dom.box.style.top ? parseInt(current.dom.box.style.top) : 0;
-                        if ((currentTop + current.height) > maxHeight) {
-                            maxHeight = currentTop + current.height;
-                        }
+                    const currentTop = current.dom.box.style.top ? parseInt(current.dom.box.style.top) : 0;
+                    if ((currentTop + current.height) > maxHeight) {
+                        maxHeight = currentTop + current.height;
                     }
                 }
 
@@ -355,51 +354,57 @@ window.vcftimeline = {
             return groupHeight;
         }
 
-        /**
-         * Calculates the top position for the current item based on the positions and end times of previous items.
-         *
-         * @param {Object} current - The current item for which the top position is being calculated.
-         * @param {number} previousIndex - The index of the previous item in the items array.
-         * @param {Array} items - An array of items containing the current and previous items.
-         * @param {number} OFFSET - The offset value to be added between items.
-         * @returns {string} The calculated top position for the current item in pixels.
-         *
-         * @example
-         * const current = {
-         *   data: { start: new Date(), end: new Date() },
-         *   dom: { box: document.querySelector('.current-box') },
-         *   height: 30
-         * };
-         * const items = [
-         *   {
-         *     data: { start: new Date(), end: new Date() },
-         *     dom: { box: document.querySelector('.previous-box') },
-         *     height: 30
-         *   }
-         * ];
-         * const OFFSET = 10;
-         * const topValue = findTopValue(current, items.length - 1, items, OFFSET);
-         */
-        function findTopValue(current, previousIndex, items, OFFSET) {
-            if (previousIndex < 0) {
-                return OFFSET + 'px';
-            }
+        function collision(item1, item2, margin) {
+            // Small margin for floating-point precision
+            const EPSILON = 0.01;
+            // Rounding to 2 decimal points
+            const item1Left = Math.round((item1.left + Number.EPSILON) * 100) / 100;
+            const item1Width = Math.round((item1.width + Number.EPSILON) * 100) / 100;
+            const item1Top = Math.round((item1.top + Number.EPSILON) * 100) / 100;
+            const item1Height = Math.round((item1.height + Number.EPSILON) * 100) / 100;
 
-            const previous = items[previousIndex];
-            if (previous.dom?.box) {
-                const currentStart = current.data.start.getTime();
-                const previousEnd = previous.data.end.getTime();
+            const item2Left = Math.round((item2.left + Number.EPSILON) * 100) / 100;
+            const item2Width = Math.round((item2.width + Number.EPSILON) * 100) / 100;
+            const item2Top = Math.round((item2.top + Number.EPSILON) * 100) / 100;
+            const item2Height = Math.round((item2.height + Number.EPSILON) * 100) / 100;
 
-                if (currentStart >= previousEnd) {
-                    return findTopValue(current, previousIndex - 1, items, OFFSET);
-                } else {
-                    const previousTop = previous.dom.box.style.top ? parseInt(previous.dom.box.style.top) : 0;
-                    const newTop = previousTop + previous.height + OFFSET;
-                    return newTop + 'px';
+            return !(
+                item1Left + item1Width <= item2Left + EPSILON ||  // item1 is to the left of item2
+                item2Left + item2Width <= item1Left + EPSILON     // item1 is to the right of item2
+            ) && (
+                item2Top === item1Top ||                                   // item1 and item2 are aligned vertically
+                !(
+                    item2Top + item2Height < item1Top  ||  // item1 is below item2 + margin.vertical
+                    item1Top + item1Height < item2Top     // item1 is above item2 - margin.vertical
+                )
+            );
+        }
+
+        function findPreviousItem(items, current, margin, OFFSET) {
+            const currentStart = current.data.start.getTime();
+            const currentEnd = current.data.end.getTime();
+            current.top = OFFSET;
+            var collidingItemIndex = 0;
+            do {
+                var collidingItem = null;
+                for (let i = collidingItemIndex  ; i < items.length; i++) {
+                    const previous = items[i];
+                    const previousEnd = previous.data.end.getTime();
+                    console.log("Previous = " + previous.content +  " Current = " + current.content + "  Overlap = "  + collision(current, previous, (margin == null ? void 0 : margin.item) || { vertical: defaultTopMargin }))
+                    if (previous.top !== null && previous !== current && (collision(current, previous, (margin == null ? void 0 : margin.item) || { vertical: defaultTopMargin })))
+                    {
+                        collidingItem = previous;
+                        collidingItemIndex = 0;
+                        current.top = previous.top;
+                        if(collision(current, previous, (margin == null ? void 0 : margin.item) || { vertical: defaultTopMargin }))
+                        {
+                                const newTop = previous.top + previous.height + OFFSET;
+                                current.top = newTop;
+                        }
+                        break;
+                    }
                 }
-            }
-
-            return findTopValue(current, previousIndex - 1, items, OFFSET);
+            } while (collidingItem);
         }
 
         /**
@@ -501,6 +506,8 @@ window.vcftimeline = {
          *
          */
         function processTimelineGroups(container) {
+            if(container.timeline._timeline.itemSet.options.stackSubgroups)
+                return;
             // Get the groups from the timeline
             const groups = container.timeline._timeline.itemSet.groups;
             const visibleGroups = container.timeline._timeline.itemSet.getVisibleGroups();
@@ -941,6 +948,8 @@ window.vcftimeline = {
             start: parsedItem.start,
             end: parsedItem.end,
             type: 0,
+            subgroup: parsedItem.subgroup,
+            subgroupOrder: parsedItem.subgroupOrder,
         };
 
         container.timeline._timeline.itemsData.add(item);
@@ -969,6 +978,8 @@ window.vcftimeline = {
                     nestedGroups: groupsNested,
                     visible: parsedGroupItems[i].visible,
                     className: parsedGroupItems[i].className,
+                    subgroupOrder: parsedGroupItems[i].subgroupOrder,
+                    subgroupStack: parsedGroupItems[i].subgroupStack,
                 });
              }
 

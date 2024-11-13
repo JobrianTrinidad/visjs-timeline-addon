@@ -48,7 +48,7 @@ import java.util.stream.Collectors;
  * more at https://github.com/visjs/vis-timeline).
  */
 @SuppressWarnings("serial")
-@NpmPackage(value = "vis-timeline", version = "7.4.9")
+@NpmPackage(value = "vis-timeline", version = "7.7.3")
 @NpmPackage(value = "moment", version = "2.29.1")
 @JsModule("./src/arrow.js")
 @JsModule("./src/vcf-timeline.js")
