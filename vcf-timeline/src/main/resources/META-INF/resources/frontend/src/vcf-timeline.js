@@ -107,6 +107,8 @@ window.vcftimeline = {
 
         container.timeline = new Arrow(timeline, bGroup);
 
+        vcftimeline.updateGroupSubgroupStack(container, groupsJson);
+
 
         // Save the original toggleGroupShowNested function
         container.timeline._timeline.itemSet._originalToggleGroupShowNested = container.timeline._timeline.itemSet.toggleGroupShowNested;
@@ -263,16 +265,35 @@ window.vcftimeline = {
          */
         function filterItems(items, shouldStack) {
             items.sort((a, b) => {
-                if (!shouldStack && a.dom?.box && b.dom?.box) {
-                    const topA = parseInt(a.dom.box.style.top);
-                    const topB = parseInt(b.dom.box.style.top);
-
-                    if (!isNaN(topA) && !isNaN(topB)) {
-                        return topA - topB;
+                    // Step 1: Order by subgroup
+                    if (a.data.subgroup && b.data.subgroup) {
+                        const subgroupComparison = a.data.subgroup.localeCompare(b.data.subgroup);
+                        if (subgroupComparison !== 0) {
+                            return subgroupComparison; // Different subgroups
+                        }
                     }
-                }
-                return new Date(a.data.start) - new Date(b.data.start);
-            });
+
+                    // Step 2: Order by subgroupOrder
+                    if (a.data.subgroupOrder !== undefined && b.data.subgroupOrder !== undefined) {
+                        const orderComparison = a.data.subgroupOrder - b.data.subgroupOrder;
+                        if (orderComparison !== 0) {
+                            return orderComparison; // Different subgroupOrder values
+                        }
+                    }
+
+                    // Step 3: If same subgroup and subgroupOrder, order by position (top) if applicable
+                    if (!shouldStack && a.dom?.box && b.dom?.box) {
+                        const topA = parseInt(a.dom.box.style.top);
+                        const topB = parseInt(b.dom.box.style.top);
+
+                        if (!isNaN(topA) && !isNaN(topB)) {
+                            return topA - topB; // Compare by top position
+                        }
+                    }
+
+                    // Step 4: Fallback to sorting by start date
+                    return new Date(a.data.start) - new Date(b.data.start);
+                });
 
             return items.filter(item => {
                 if (item.dom?.box) {
@@ -316,7 +337,6 @@ window.vcftimeline = {
             let maxHeight = 0;
             let groupHeight = OFFSET;
             const minHeight = (items.length > 0) ? group._calculateHeight(items[0].options.margin) : group.props.label.height;
-            const TOP_OFFSET_PX = '5px';
 
             if (items.length > 0) {
                 let margin = items[0].options.margin;
@@ -325,22 +345,28 @@ window.vcftimeline = {
                     items[i].top = null;
                 }
 
+                const placedItems = [];
                 if (items[0].dom?.box) {
-                    items[0].dom.box.style.top = TOP_OFFSET_PX;
-                    items[0].top = parseInt(TOP_OFFSET_PX);
+                    items[0].dom.box.style.top = ((!items[0].stackTop) ? OFFSET : items[0].stackTop) + 'px';
+                    items[0].top = ((!items[0].stackTop) ? OFFSET : items[0].stackTop);
+                    placedItems.push(items[0]);
                 }
 
                 for (let i = 1; i < items.length; i++) {
                     const current = items[i];
                     if (current.dom?.box ) {// &&
-                        findPreviousItem(items, current, margin, OFFSET)
-                        current.dom.box.style.top = current.top + 'px';
+                        if(!current.stackTop)
+                            findPreviousItem(placedItems, current, margin, OFFSET)
+                        current.top = current.stackTop;
+                        current.dom.box.style.top = current.stackTop + 'px';
                     }
 
                     const currentTop = current.dom.box.style.top ? parseInt(current.dom.box.style.top) : 0;
                     if ((currentTop + current.height) > maxHeight) {
                         maxHeight = currentTop + current.height;
                     }
+                    // Add current item to placedItems for collision tracking
+                    placedItems.push(current);
                 }
 
                 groupHeight = (items.length === 1) ? (minHeight + OFFSET) : (maxHeight + OFFSET);
@@ -384,27 +410,26 @@ window.vcftimeline = {
             const currentStart = current.data.start.getTime();
             const currentEnd = current.data.end.getTime();
             current.top = OFFSET;
-            var collidingItemIndex = 0;
             do {
                 var collidingItem = null;
-                for (let i = collidingItemIndex  ; i < items.length; i++) {
+                for (let i = 0  ; i < items.length; i++) {
                     const previous = items[i];
                     const previousEnd = previous.data.end.getTime();
                     console.log("Previous = " + previous.content +  " Current = " + current.content + "  Overlap = "  + collision(current, previous, (margin == null ? void 0 : margin.item) || { vertical: defaultTopMargin }))
                     if (previous.top !== null && previous !== current && (collision(current, previous, (margin == null ? void 0 : margin.item) || { vertical: defaultTopMargin })))
                     {
                         collidingItem = previous;
-                        collidingItemIndex = 0;
                         current.top = previous.top;
                         if(collision(current, previous, (margin == null ? void 0 : margin.item) || { vertical: defaultTopMargin }))
                         {
-                                const newTop = previous.top + previous.height + OFFSET;
+                                const newTop = previous.top + previous.height + 1;
                                 current.top = newTop;
                         }
                         break;
                     }
                 }
             } while (collidingItem);
+            current.stackTop = current.top;
         }
 
         /**
@@ -431,39 +456,77 @@ window.vcftimeline = {
          */
         function unStackGroup(group, OFFSET, isReset) {
             let items = Object.values(group.visibleItems);
+            items = filterItems(items, false);
             const minHeight = (items.length > 0) ? group._calculateHeight(items[0].options.margin) : group.props.label.height;
             let currentHeight = group.dom.label.offsetHeight;
             let maxHeight = 0;
             let groupHeight = OFFSET;
+            let itemTop = OFFSET;
 
+            let topMap = {};
+            if(group.groupSubgroupStack)
+            {
+                items.forEach(item => {
+                    const groupName = item.data.subgroup;
+                    const itemHeight = item.dom?.box?.offsetHeight || 0;
+                    if (groupName) {
+                        if (topMap[groupName] === undefined) {
+                            if (Object.keys(topMap).length === 0)
+                                topMap[groupName] = OFFSET;
+                            else
+                            {
+                                itemTop = itemTop + itemHeight + 1;
+                                topMap[groupName] = itemTop;
+                            }
+                        }
+                    }
+                });
+                console.log(topMap);
+            }
+            if (Object.keys(topMap).length > 0) {
+                // If topMap is not empty, calculate 'allgroup'
+                const itemHeight = items[items.length - 1]?.dom?.box?.offsetHeight || 0; // Last item's height or 0
+                topMap['allgroup'] = itemTop + itemHeight + 1;
+            } else {
+                // If topMap is empty, default 'allgroup' to OFFSET
+                topMap['allgroup'] = OFFSET;
+            }
             for (let i = 1; i < items.length; i++) {
-                const currentItem = items[i];
-                const prevItem = items[i - 1];
+               const currentItem = items[i];
+               const prevItem = items[i - 1];
 
-                if (currentItem.dom?.box && prevItem.dom?.box) {
-                    const currentStart = currentItem.data.start.getTime();
-                    const prevStart = prevItem.data.start.getTime();
-                    const currentEnd = currentItem.data.end.getTime();
-                    const prevEnd = prevItem.data.end.getTime();
+               if (currentItem.dom?.box && prevItem.dom?.box) {
+                   const currentStart = currentItem.data.start.getTime();
+                   const prevStart = prevItem.data.start.getTime();
+                   const currentEnd = currentItem.data.end.getTime();
+                   const prevEnd = prevItem.data.end.getTime();
+                   const groupName = currentItem.data.subgroup;
+                   if (group.groupSubgroupStack && groupName)
+                       itemTop = topMap[groupName];
+                   else
+                       itemTop = topMap['allgroup'];
 
-                    if(isReset)
-                    {
-                        if(i===1)
-                            prevItem.dom.box.style.top = `${OFFSET}px`;
-                        currentItem.dom.box.style.top = `${OFFSET}px`;
-                    }
-                    // Adjust top position if items have the same start time & end
-//                    if (currentStart === prevStart && currentEnd === prevEnd) {
-//                        const prevTop = parseInt(prevItem.dom.box.style.top) || 0;
-//                        currentItem.dom.box.style.top = `${prevTop + currentItem.height}px`;
-//                    }
+                   if (isReset) {
+                       if (i === 1) {
+                           if (prevItem.data.subgroup)
+                               prevItem.dom.box.style.top = `${topMap[prevItem.data.subgroup]}px`;
+                           else
+                               prevItem.dom.box.style.top = `${itemTop}px`;
+                       }
+                       currentItem.dom.box.style.top = `${itemTop}px`;
+                   }
+                   // Adjust top position if items have the same start time & end
+                   //                    if (currentStart === prevStart && currentEnd === prevEnd) {
+                   //                        const prevTop = parseInt(prevItem.dom.box.style.top) || 0;
+                   //                        currentItem.dom.box.style.top = `${prevTop + currentItem.height}px`;
+                   //                    }
 
-                    // Update maxHeight if current item exceeds it
-                    const currentTop = parseInt(currentItem.dom.box.style.top) || 0;
-                    if (currentTop + currentItem.height > maxHeight) {
-                        maxHeight = currentTop + currentItem.height;
-                    }
-                }
+                   // Update maxHeight if current item exceeds it
+                   const currentTop = parseInt(currentItem.dom.box.style.top) || 0;
+                   if (currentTop + currentItem.height > maxHeight) {
+                       maxHeight = currentTop + currentItem.height;
+                   }
+               }
             }
             groupHeight = (items.length > 1) ?  (maxHeight + OFFSET) : (minHeight + OFFSET);
             group._applyGroupHeight(groupHeight);
@@ -775,14 +838,14 @@ window.vcftimeline = {
         });
     },
     _moveWindowTo(container, dateStart, dateEnd){
-        container.timeline._timeline.setWindow(new Date(dateStart), new Date(dateEnd), {animation: true});
+       if(container.timeline) container.timeline._timeline.setWindow(new Date(dateStart), new Date(dateEnd), {animation: true});
     },
     _moveWindowToRight(container, range, widthInMilliseconds) {
-        container.timeline._timeline.setWindow(new Date(range.start.valueOf() - widthInMilliseconds / 50), new Date(range.end.valueOf() - widthInMilliseconds / 50), {animation: false});
+        if(container.timeline) container.timeline._timeline.setWindow(new Date(range.start.valueOf() - widthInMilliseconds / 50), new Date(range.end.valueOf() - widthInMilliseconds / 50), {animation: false});
     },
 
     _moveWindowToLeft(container, range, widthInMilliseconds) {
-        container.timeline._timeline.setWindow(new Date(range.start.valueOf() + widthInMilliseconds / 50), new Date(range.end.valueOf() + widthInMilliseconds / 50), {animation: false});
+        if(container.timeline) container.timeline._timeline.setWindow(new Date(range.start.valueOf() + widthInMilliseconds / 50), new Date(range.end.valueOf() + widthInMilliseconds / 50), {animation: false});
     },
 
     _processOptions: function (container, optionsJson) {
@@ -984,7 +1047,23 @@ window.vcftimeline = {
              }
 
              container.timeline._timeline.setGroups(groupItems);
+             vcftimeline.updateGroupSubgroupStack(container, groupsJson);
          }
+    },
+
+    updateGroupSubgroupStack: function (container, groupsJson) {
+        const groups = container.timeline._timeline.itemSet.groups;
+        const parsedGroupItems = JSON.parse(groupsJson);
+
+        parsedGroupItems.forEach(item => {
+            const groupId = Number.parseInt(item.groupId, 10);
+
+            // Check if the group ID exists in the groups object
+            if (groups[groupId]) {
+                // Update groupSubgroupStack
+                groups[groupId].groupSubgroupStack = item.groupSubgroupStack;
+            }
+        });
     },
 
     setItems: function (container, itemsJson, autoZoom) {

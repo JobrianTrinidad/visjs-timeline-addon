@@ -174,7 +174,7 @@ public class ItemGroup {
         Optional.of(getTreeLevel()).ifPresent(v -> js.put("treeLevel", v));
         Optional.ofNullable(getNestedGroups()).ifPresent(v -> js.put("nestedGroups", v));
         Optional.of(isVisible()).ifPresent(v -> js.put("visible", v));
-        Optional.of(isSubgroupStack()).ifPresent(v -> js.put("subgroupStack", v));
+        Optional.of(isSubgroupStack()).ifPresent(v -> js.put("groupSubgroupStack", v));
         if (!getSubgroupStackMap().isEmpty()) {
             JsonObject subgroupStackBuilder = Json.createObject();
             getSubgroupStackMap().forEach(subgroupStackBuilder::put); // adds each entry in the map to the builder
