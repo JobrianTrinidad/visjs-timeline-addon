@@ -114,7 +114,6 @@ window.vcftimeline = {
         container.timeline._timeline.itemSet._originalToggleGroupShowNested = container.timeline._timeline.itemSet.toggleGroupShowNested;
         // Define your custom toggleGroupShowNested function
         function customToggleGroupShowNested(group) {
-//          console.log("Custom validation for group:", group);
           if(group.isShowHideCall)
           {
             group.isShowHideCall = false;
@@ -172,8 +171,29 @@ window.vcftimeline = {
                     }
                 }
             }
-
+//            console.log('time line selected ' + container.timeline._timeline.itemSet.selection);
             let temp = properties.items.toString();
+//            console.log('selected ' + temp);
+            if(properties.event.srcEvent && properties.event.srcEvent.altKey) {
+                const targetItem = container.timeline._timeline.itemSet.itemFromTarget(properties.event);
+                if(targetItem) {
+                    const targetSubgroup = targetItem.data.subgroup;
+                    const items = container.timeline._timeline.itemSet.items;
+                    const matchingIds = [];
+                    for (const key in items) {
+                        if (items.hasOwnProperty(key)) {
+                            const item = items[key];
+                            if (item.data.subgroup === targetSubgroup) {
+                                matchingIds.push(item.data.id);
+                            }
+                        }
+                    }
+                    let combinedArray = [...properties.items, ...matchingIds];
+                    let uniqueValues = [...new Set(combinedArray)];
+                    temp = uniqueValues.join(',');
+//                    console.log('Subgroup selected ' + temp);
+                }
+            }
             container.$server.onSelect(temp.replace(" ", ""));
         });
 
@@ -415,7 +435,6 @@ window.vcftimeline = {
                 for (let i = 0  ; i < items.length; i++) {
                     const previous = items[i];
                     const previousEnd = previous.data.end.getTime();
-                    console.log("Previous = " + previous.content +  " Current = " + current.content + "  Overlap = "  + collision(current, previous, (margin == null ? void 0 : margin.item) || { vertical: defaultTopMargin }))
                     if (previous.top !== null && previous !== current && (collision(current, previous, (margin == null ? void 0 : margin.item) || { vertical: defaultTopMargin })))
                     {
                         collidingItem = previous;
@@ -481,7 +500,6 @@ window.vcftimeline = {
                         }
                     }
                 });
-                console.log(topMap);
             }
             if (Object.keys(topMap).length > 0) {
                 // If topMap is not empty, calculate 'allgroup'
