@@ -171,9 +171,7 @@ window.vcftimeline = {
                     }
                 }
             }
-//            console.log('time line selected ' + container.timeline._timeline.itemSet.selection);
             let temp = properties.items.toString();
-//            console.log('selected ' + temp);
             if(properties.event.srcEvent && properties.event.srcEvent.altKey) {
                 const targetItem = container.timeline._timeline.itemSet.itemFromTarget(properties.event);
                 if(targetItem) {
@@ -191,7 +189,6 @@ window.vcftimeline = {
                     let combinedArray = [...properties.items, ...matchingIds];
                     let uniqueValues = [...new Set(combinedArray)];
                     temp = uniqueValues.join(',');
-//                    console.log('Subgroup selected ' + temp);
                 }
             }
             container.$server.onSelect(temp.replace(" ", ""));
@@ -259,68 +256,45 @@ window.vcftimeline = {
                 end: properties.end
             };
             container.$server.updateWindowRangeChangedEvent(rangeChangedData);
-            processTimelineGroups(container);
+            renderTimelineGroups(container);
         });
 
         /**
-         * Sorts and filters an array of items based on their top position and start time.
+         * Filters and sorts items based on their subgroups and visibility.
          *
-         * @param {Array} items - An array of items to be sorted and filtered.
-         * @param {boolean} shouldStack - Flag indicating whether the items should be stacked or not.
-         * @returns {Array} The sorted and filtered array of items.
-         *
-         * @example
-         * const items = [
-         *   {
-         *     data: { start: new Date('2024-07-01') },
-         *     dom: { box: document.querySelector('.item1') }
-         *   },
-         *   {
-         *     data: { start: new Date('2024-06-30') },
-         *     dom: { box: document.querySelector('.item2') }
-         *   }
-         * ];
-         * const shouldStack = true;
-         * const filteredItems = filterItems(items, shouldStack);
+         * @param {Array} items - Array of items to be filtered and sorted. Each item should have a `data` property containing at least:
+         *                        - `subgroup` (optional): Subgroup identifier.
+         *                        - `start` (required): Start date for sorting.
+         *                        - `dom` (optional): DOM object containing a `box` element with a `style` property.
+         * @returns {Array} - A new array of items, filtered to only include visible items, sorted by subgroup and start date.
          */
-        function filterItems(items, shouldStack) {
-            items.sort((a, b) => {
-                    // Step 1: Order by subgroup
-                    if (a.data.subgroup && b.data.subgroup) {
-                        const subgroupComparison = a.data.subgroup.localeCompare(b.data.subgroup);
-                        if (subgroupComparison !== 0) {
-                            return subgroupComparison; // Different subgroups
-                        }
-                    }
+        function filterItems(items) {
+            // Group items by 'subgroup', defaulting to 'No_Subgroup' if none is provided
+            const groupedItems = items.reduce((groups, item) => {
+                const subgroup = item.data.subgroup || 'No_Subgroup';
+                (groups[subgroup] ||= []).push(item);
+                return groups;
+            }, {});
 
-                    // Step 2: Order by subgroupOrder
-                    if (a.data.subgroupOrder !== undefined && b.data.subgroupOrder !== undefined) {
-                        const orderComparison = a.data.subgroupOrder - b.data.subgroupOrder;
-                        if (orderComparison !== 0) {
-                            return orderComparison; // Different subgroupOrder values
-                        }
-                    }
+            // Sort each subgroup by the start date
+            Object.values(groupedItems).forEach(subgroup => {
+                subgroup.sort((a, b) => new Date(a.data.start) - new Date(b.data.start));
+            });
 
-                    // Step 3: If same subgroup and subgroupOrder, order by position (top) if applicable
-                    if (!shouldStack && a.dom?.box && b.dom?.box) {
-                        const topA = parseInt(a.dom.box.style.top);
-                        const topB = parseInt(b.dom.box.style.top);
+            // Sort subgroups by the earliest start date of their first item
+            const sortedGroups = Object.entries(groupedItems).sort(([, groupA], [, groupB]) => {
+                const firstItemA = groupA[0]?.data.start || Infinity;
+                const firstItemB = groupB[0]?.data.start || Infinity;
+                return new Date(firstItemA) - new Date(firstItemB);
+            });
 
-                        if (!isNaN(topA) && !isNaN(topB)) {
-                            return topA - topB; // Compare by top position
-                        }
-                    }
+            // Flatten sorted groups into a single array of items
+            const sortedItemsArray = sortedGroups.flatMap(([, items]) => items);
 
-                    // Step 4: Fallback to sorting by start date
-                    return new Date(a.data.start) - new Date(b.data.start);
-                });
-
-            return items.filter(item => {
-                if (item.dom?.box) {
-                    const displayStyle = item.dom.box.style.display;
-                    return displayStyle === '' || displayStyle !== 'none';
-                }
-                return true;
+            // Filter items to exclude those with a DOM `box` element set to `display: none`
+            return sortedItemsArray.filter(item => {
+                const displayStyle = item.dom?.box?.style?.display || '';
+                return displayStyle === '' || displayStyle !== 'none';
             });
         }
 
@@ -364,21 +338,34 @@ window.vcftimeline = {
                 for (let i = 0; i < items.length; i++) {
                     items[i].top = null;
                 }
-
+                let topMap = {};
                 const placedItems = [];
                 if (items[0].dom?.box) {
                     items[0].dom.box.style.top = ((!items[0].stackTop) ? OFFSET : items[0].stackTop) + 'px';
                     items[0].top = ((!items[0].stackTop) ? OFFSET : items[0].stackTop);
                     placedItems.push(items[0]);
+                    const groupName = items[0].data.subgroup;
+                     if (groupName) {
+                         if (topMap[groupName] === undefined) {
+                          topMap[groupName] = items[0].top;
+                           }
+                      }
                 }
 
                 for (let i = 1; i < items.length; i++) {
                     const current = items[i];
                     if (current.dom?.box ) {// &&
-                        if(!current.stackTop)
-                            findPreviousItem(placedItems, current, margin, OFFSET)
+                    const groupName = current.data.subgroup;
+                    const groupTop = groupName && topMap[groupName] === undefined ? OFFSET : topMap[groupName];
+                        if(!current.stackTop || group.isReCalculateStack)
+                            calculateItemStuckTop(placedItems, current, margin, groupTop)
                         current.top = current.stackTop;
                         current.dom.box.style.top = current.stackTop + 'px';
+                         if (groupName) {
+                        if (topMap[groupName] === undefined) {
+                         topMap[groupName] = current.top;
+                           }
+                        }
                     }
 
                     const currentTop = current.dom.box.style.top ? parseInt(current.dom.box.style.top) : 0;
@@ -397,57 +384,91 @@ window.vcftimeline = {
                 group._applyGroupHeight(groupHeight);
                 group.isHightUpdate = false;
             }
+            group.isReCalculateStack = false;
             return groupHeight;
         }
 
+        /**
+         * Determines whether two items collide in a 2D space, considering margins and precision.
+         *
+         * @param {Object} item1 - The first item with dimensions: `left`, `width`, `top`, `height`.
+         * @param {Object} item2 - The second item with dimensions: `left`, `width`, `top`, `height`.
+         * @param {Object} margin - Optional margin for collision calculation (not used in current logic).
+         * @returns {boolean} - `true` if the items collide; otherwise, `false`.
+         *
+         * @example
+         * const hasCollision = collision(item1, item2, { vertical: 10 });
+         */
         function collision(item1, item2, margin) {
-            // Small margin for floating-point precision
-            const EPSILON = 0.01;
-            // Rounding to 2 decimal points
-            const item1Left = Math.round((item1.left + Number.EPSILON) * 100) / 100;
-            const item1Width = Math.round((item1.width + Number.EPSILON) * 100) / 100;
-            const item1Top = Math.round((item1.top + Number.EPSILON) * 100) / 100;
-            const item1Height = Math.round((item1.height + Number.EPSILON) * 100) / 100;
+            const EPSILON = 0.1;
 
-            const item2Left = Math.round((item2.left + Number.EPSILON) * 100) / 100;
-            const item2Width = Math.round((item2.width + Number.EPSILON) * 100) / 100;
-            const item2Top = Math.round((item2.top + Number.EPSILON) * 100) / 100;
-            const item2Height = Math.round((item2.height + Number.EPSILON) * 100) / 100;
+            const roundToPrecision = (value, precision = 1) => {
+                const factor = Math.pow(10, precision);
+                return Math.round(value * factor) / factor;
+            };
 
-            return !(
-                item1Left + item1Width <= item2Left + EPSILON ||  // item1 is to the left of item2
-                item2Left + item2Width <= item1Left + EPSILON     // item1 is to the right of item2
-            ) && (
-                item2Top === item1Top ||                                   // item1 and item2 are aligned vertically
-                !(
-                    item2Top + item2Height < item1Top  ||  // item1 is below item2 + margin.vertical
-                    item1Top + item1Height < item2Top     // item1 is above item2 - margin.vertical
-                )
-            );
+            const getRoundedDimensions = (item) => ({
+                left: roundToPrecision(item.left),
+                width: roundToPrecision(item.width),
+                top: roundToPrecision(item.top),
+                height: roundToPrecision(item.height),
+            });
+
+            const { left: item1Left, width: item1Width, top: item1Top, height: item1Height } = getRoundedDimensions(item1);
+            const { left: item2Left, width: item2Width, top: item2Top, height: item2Height } = getRoundedDimensions(item2);
+
+            const horizontallyOverlapping = !(item1Left + item1Width <= item2Left + EPSILON || item2Left + item2Width <= item1Left + EPSILON);
+            const verticallyOverlapping = item2Top === item1Top ||
+                !(item2Top + item2Height < item1Top || item1Top + item1Height < item2Top);
+
+            return horizontallyOverlapping && verticallyOverlapping;
         }
 
-        function findPreviousItem(items, current, margin, OFFSET) {
+        /**
+         * Calculates and assigns the `top` position for an item in a stacked layout, avoiding collisions.
+         *
+         * @param {Array} items - Array of existing items for collision checks.
+         * @param {Object} current - The item for which `top` is being calculated. Contains:
+         *                           - `data.start`: Start date.
+         *                           - `data.end`: End date.
+         *                           - `top`: The current top position (will be modified).
+         *                           - `stackTop`: Final calculated top position.
+         *                           - `height`: Item height for positioning.
+         * @param {Object} margin - Optional margins. Defaults to `{ vertical: defaultTopMargin }`.
+         * @param {number} OFFSET - The initial top position for the item.
+         *
+         * @returns {void} - The function updates `current.top` and `current.stackTop`.
+         *
+         * @example
+         * calculateItemStuckTop(existingItems, newItem, { vertical: 5 }, 10);
+         */
+        function calculateItemStuckTop(items, current, margin, OFFSET) {
+            const defaultMargin = (margin?.item || { vertical: OFFSET });
             const currentStart = current.data.start.getTime();
             const currentEnd = current.data.end.getTime();
+
             current.top = OFFSET;
+
+            let collidingItem;
             do {
-                var collidingItem = null;
-                for (let i = 0  ; i < items.length; i++) {
-                    const previous = items[i];
+                collidingItem = null;
+
+                for (const previous of items) {
+                    const previousStart = previous.data.start.getTime();
                     const previousEnd = previous.data.end.getTime();
-                    if (previous.top !== null && previous !== current && (collision(current, previous, (margin == null ? void 0 : margin.item) || { vertical: defaultTopMargin })))
-                    {
+
+                    if (previous.top !== null && previous !== current && collision(current, previous, defaultMargin)) {
                         collidingItem = previous;
-                        current.top = previous.top;
-                        if(collision(current, previous, (margin == null ? void 0 : margin.item) || { vertical: defaultTopMargin }))
-                        {
-                                const newTop = previous.top + previous.height + 1;
-                                current.top = newTop;
-                        }
+
+                        // Increment current.top only if the current position still causes a collision
+                        const potentialTop = previous.top + previous.height + 1;
+                        current.top = collision(current, previous, defaultMargin) ? potentialTop : current.top;
+
                         break;
                     }
                 }
             } while (collidingItem);
+
             current.stackTop = current.top;
         }
 
@@ -473,42 +494,24 @@ window.vcftimeline = {
          * const isReset = true;
          * const groupHeight = unStackGroup(group, OFFSET, isReset);
          */
-        function unStackGroup(group, OFFSET, isReset) {
-            let items = Object.values(group.visibleItems);
-            items = filterItems(items, false);
+        function unStackGroup(items, group, OFFSET, isReset) {
+            if(!items || !group)
+                return;
             const minHeight = (items.length > 0) ? group._calculateHeight(items[0].options.margin) : group.props.label.height;
             let currentHeight = group.dom.label.offsetHeight;
             let maxHeight = 0;
             let groupHeight = OFFSET;
-            let itemTop = OFFSET;
-
-            let topMap = {};
-            if(group.groupSubgroupStack)
+            let isReCalculateUnStack = (group.topMap && group.topMap['topMapItemSize'] !== items.length) || group.isReCalculateUnStack
+            let topMap = group.topMap && !isReCalculateUnStack ? group.topMap : {};
+            topMap['topMapItemSize'] = items.length;
+            let heightMap = {};
+            group.topMap = topMap;
+            if (group.groupSubgroupStack && items.length > 0 && items[0].data.subgroup)
             {
-                items.forEach(item => {
-                    const groupName = item.data.subgroup;
-                    const itemHeight = item.dom?.box?.offsetHeight || 0;
-                    if (groupName) {
-                        if (topMap[groupName] === undefined) {
-                            if (Object.keys(topMap).length === 0)
-                                topMap[groupName] = OFFSET;
-                            else
-                            {
-                                itemTop = itemTop + itemHeight + 1;
-                                topMap[groupName] = itemTop;
-                            }
-                        }
-                    }
-                });
+                topMap[items[0].data.subgroup] = OFFSET;
+                heightMap[OFFSET] = items[0].data.end.getTime();
             }
-            if (Object.keys(topMap).length > 0) {
-                // If topMap is not empty, calculate 'allgroup'
-                const itemHeight = items[items.length - 1]?.dom?.box?.offsetHeight || 0; // Last item's height or 0
-                topMap['allgroup'] = itemTop + itemHeight + 1;
-            } else {
-                // If topMap is empty, default 'allgroup' to OFFSET
-                topMap['allgroup'] = OFFSET;
-            }
+
             for (let i = 1; i < items.length; i++) {
                const currentItem = items[i];
                const prevItem = items[i - 1];
@@ -519,26 +522,26 @@ window.vcftimeline = {
                    const currentEnd = currentItem.data.end.getTime();
                    const prevEnd = prevItem.data.end.getTime();
                    const groupName = currentItem.data.subgroup;
-                   if (group.groupSubgroupStack && groupName)
-                       itemTop = topMap[groupName];
-                   else
-                       itemTop = topMap['allgroup'];
-
+                   // Do not pass the heightMap if you want the group items in new line for every group
+                   if(!currentItem.unStackTop || currentItem.unStackTop <= 0 || isReCalculateUnStack)
+                        currentItem.unStackTop = calculateItemUnStackTop(groupName, group, prevItem, currentItem, OFFSET, heightMap);
+                   currentItem.top = currentItem.unStackTop;
+                   heightMap[currentItem.top] = currentEnd;
                    if (isReset) {
                        if (i === 1) {
                            if (prevItem.data.subgroup)
-                               prevItem.dom.box.style.top = `${topMap[prevItem.data.subgroup]}px`;
+                           {
+                               prevItem.top = calculateItemUnStackTop(prevItem.data.subgroup, group, null, prevItem, OFFSET, heightMap);
+                               prevItem.dom.box.style.top = `${prevItem.top}px`;
+                           }
                            else
-                               prevItem.dom.box.style.top = `${itemTop}px`;
+                           {
+                               prevItem.dom.box.style.top = `${currentItem.top}px`;
+                               prevItem.top = currentItem.top;
+                           }
                        }
-                       currentItem.dom.box.style.top = `${itemTop}px`;
+                       currentItem.dom.box.style.top = `${currentItem.top}px`;
                    }
-                   // Adjust top position if items have the same start time & end
-                   //                    if (currentStart === prevStart && currentEnd === prevEnd) {
-                   //                        const prevTop = parseInt(prevItem.dom.box.style.top) || 0;
-                   //                        currentItem.dom.box.style.top = `${prevTop + currentItem.height}px`;
-                   //                    }
-
                    // Update maxHeight if current item exceeds it
                    const currentTop = parseInt(currentItem.dom.box.style.top) || 0;
                    if (currentTop + currentItem.height > maxHeight) {
@@ -549,31 +552,91 @@ window.vcftimeline = {
             groupHeight = (items.length > 1) ?  (maxHeight + OFFSET) : (minHeight + OFFSET);
             group._applyGroupHeight(groupHeight);
             group.isHightUpdate = true;
+            group.isReCalculateUnStack = false;
             return groupHeight;
         }
 
         /**
-         * Toggles the display of a button within a specified group's.
+         * Calculates the top position (`unStackTop`) for an item in a timeline.
          *
-         * @param {boolean} isShowButton - Determines whether the button should be shown or hidden.
-         *                                  - `true`: Show the button.
-         *                                  - `false`: Hide the button.
-         * @param {Object} group - The group object which contains the DOM elements.
-         * @param {Object} [group.dom] - The DOM elements associated with the group.
-         * @param {HTMLElement} [group.dom.label] - The label element of the group that may contain the button.
-         * @returns {HTMLElement|null} The button element if found, otherwise `null`.
+         * @param {string|null} groupName - The subgroup name of the item, or `null` if none.
+         * @param {Object} group - The group object with stack configuration and top map.
+         * @param {Object} [group.topMap] - A map of subgroup names or "allgroup" to their top positions.
+         * @param {Object|null} prevItem - The previous item, or `null` if none.
+         * @param {Object} currentItem - The current item with `data` and `dom` properties.
+         * @param {number} OFFSET - The default starting offset for the item's top position.
+         * @param {Object|null} heightMap - A map of top positions to end dates for stacking.
+         * @returns {number} - The calculated top position for the item.
          *
          * @example
-         * const group = {
-         *   dom: {
-         *     label: document.querySelector('.group-label')
-         *   }
-         * };
-         * toggleButtonDisplay(true, group);  // Shows the button within the group's label
-         * toggleButtonDisplay(false, group); // Hides the button within the group's label
+         * const top = calculateItemUnStackTop('subgroup', group, prevItem, currentItem, 10, heightMap);
+         */
+        function calculateItemUnStackTop(groupName, group, prevItem, currentItem, OFFSET, heightMap) {
+            let itemTop = prevItem?.unStackTop || OFFSET;
+            let topMap = group.topMap;
+
+            if (group.groupSubgroupStack && groupName) {
+                // Initialize topMap[groupName] if it doesn't exist or is invalid
+                if (!Number.isFinite(topMap[groupName])) {
+                    if (Object.keys(topMap).length === 1) {
+                        topMap[groupName] = OFFSET;
+                    } else if (heightMap) {
+                        // Find the first available top position in heightMap
+                        const entry = Object.entries(heightMap).find(([top, endDate]) =>
+                            currentItem.data.start.getTime() > endDate
+                        );
+
+                        if (entry) {
+                            itemTop = parseFloat(entry[0]);
+                        } else {
+                            // Default to the maximum top in heightMap
+                            itemTop = Math.max(...Object.keys(heightMap).map(Number)) || OFFSET;
+                            // Adjust with the current item's height
+                            const itemHeight = currentItem?.dom?.box?.offsetHeight || 0;
+                            itemTop += itemHeight + 1;
+                        }
+                        topMap[groupName] = itemTop;
+                    } else {
+                        // Handle cases where heightMap is not available
+                        const itemHeight = currentItem?.dom?.box?.offsetHeight || 0;
+                        itemTop += itemHeight + 1;
+                        topMap[groupName] = itemTop;
+                    }
+                }
+
+                itemTop = topMap[groupName];
+            } else {
+                // Handle 'allgroup' case
+                if (!Number.isFinite(topMap['allgroup'])) {
+                    if (Object.keys(topMap).length > 1) {
+                        const itemHeight = prevItem?.dom?.box?.offsetHeight || 0;
+                        topMap['allgroup'] = itemTop + itemHeight + 1;
+                    } else {
+                        topMap['allgroup'] = OFFSET;
+                    }
+                }
+                itemTop = topMap['allgroup'];
+            }
+
+            return itemTop;
+        }
+
+        /**
+         * Toggles the display of a button within a specified group's label.
+         *
+         * @param {boolean} isShowButton - Whether to show (`true`) or hide (`false`) the button.
+         * @param {Object} group - The group object from the DataSet containing DOM elements.
+         * @param {Object} [group.dom] - DOM elements associated with the group.
+         * @param {HTMLElement} [group.dom.label] - The label element that may contain the button.
+         * @returns {HTMLElement|null} - The button element if found; otherwise, `null`.
+         *
+         * @example
+         * const group = dataSet.get(someGroupId); // Assume dataSet is a DataSet instance
+         * toggleButtonDisplay(true, group);  // Shows the button for the group's label
+         * toggleButtonDisplay(false, group); // Hides the button for the group's label
          */
         function toggleButtonDisplay(isShowButton, group) {
-            const button = (group.dom?.label) ? group.dom.label.querySelector("button") : null;
+            const button = group.dom?.label?.querySelector("button") || null;
             if (button) {
                 button.style.display = isShowButton ? '' : 'none';
             }
@@ -586,7 +649,7 @@ window.vcftimeline = {
          * @param {Object} container - The container object containing the timeline and its settings.
          *
          */
-        function processTimelineGroups(container) {
+        function renderTimelineGroups(container) {
             if(container.timeline._timeline.itemSet.options.stackSubgroups)
                 return;
             // Get the groups from the timeline
@@ -600,7 +663,7 @@ window.vcftimeline = {
                 }
                 let items = Object.values(group.visibleItems);
                 const shouldStack = (typeof group.isCollapsed === "undefined") ? container.timeline._timeline.itemSet.options.stack : !group.isCollapsed;
-                items = filterItems(items, shouldStack);
+                items = filterItems(items);
 
                 // Set initial collapse state if not defined
                 if (group.isCollapsed === undefined || group.isCollapsed === null) {
@@ -628,6 +691,8 @@ window.vcftimeline = {
                             const groupID = event.target.groupID;
                             const group = container.timeline._timeline.itemSet.groups[groupID];
                             group.isShowHideCall = true;
+                            items = Object.values(group.visibleItems);
+                            items = filterItems(items);
 
                             if (group.isCollapsed || button.classList.contains('icon-collapsed')) {
                                 button.classList.replace("icon-collapsed", "icon-expanded");
@@ -636,14 +701,14 @@ window.vcftimeline = {
                             } else {
                                 button.classList.replace("icon-expanded", "icon-collapsed");
                                 group.isCollapsed = true;
-                                unStackGroup(group, OFFSET, true);
+                                unStackGroup(items, group, OFFSET, true);
                             }
                             event.stopPropagation();
                         });
                     }
                 } else {
                     // When it does not stack and if items overlap, add some space at the top
-                    const groupHeight = (items.length > 1) ? unStackGroup(group, OFFSET, group.isCollapsed) : 0;
+                    const groupHeight = (items.length > 1) ? unStackGroup(items, group, OFFSET, group.isCollapsed) : 0;
                     const isShowButton = (items.length > 1);// && (groupHeight > (items[0].height + (OFFSET * 2)));
                     const button = toggleButtonDisplay(isShowButton, group);
                 }
@@ -651,7 +716,7 @@ window.vcftimeline = {
         }
 
         container.timeline._timeline.on("changed", () => {
-            processTimelineGroups(container);
+            renderTimelineGroups(container);
             this._updateConnections(container, false);
             this._updateTimelineHeight(container);
         });
@@ -1091,9 +1156,20 @@ window.vcftimeline = {
             container.timeline._timeline.setItems(items);
         }
     },
-
+    resetGroupReCalculation: function (container, groupId) {
+        if (container?.timeline?._timeline?.itemSet?.groups[groupId]) {
+            container.timeline._timeline.itemSet.groups[groupId].isReCalculateStack = true;
+            container.timeline._timeline.itemSet.groups[groupId].isReCalculateUnStack = true;
+        }
+    },
+    resetItemProperties: function (item, container, groupId) {
+        item.stackTop = 0;
+        item.unStackTop = 0;
+        vcftimeline.resetGroupReCalculation(container, groupId);
+    },
     revertMove: function (container, itemId, itemJson) {
-        let itemData = container.timeline._timeline.itemSet.items[itemId].data;
+        let item = container.timeline._timeline.itemSet.items[itemId];
+        let itemData = item.data;
         let parsedItem = JSON.parse(itemJson);
         itemData.start = parsedItem.start;
         itemData.end = parsedItem.end;
@@ -1101,15 +1177,27 @@ window.vcftimeline = {
         container.timeline._timeline.itemSet.items[itemId].left =
             container.timeline._timeline.itemSet.items[itemId].conversion.toScreen(moment(itemData.start));
         container.timeline._timeline.itemsData.update(itemData);
+        if (item && itemData) {
+            vcftimeline.resetItemProperties(item, container, itemData.group);
+        }
     },
 
     removeItem: function (container, itemId) {
-        container.timeline._timeline.itemsData.remove(itemId);
+       let item = container.timeline._timeline.itemSet.items[itemId];
+       let itemData = item.data;
+       if (item && itemData) {
+           vcftimeline.resetItemProperties(item, container, itemData.group);
+       }
+       container.timeline._timeline.itemsData.remove(itemId);
     },
 
     updateItemContent: function (container, itemId, newContent) {
-        let itemData = container.timeline._timeline.itemSet.items[itemId].data;
+        let item = container.timeline._timeline.itemSet.items[itemId];
+        let itemData = item.data;
         itemData.content = newContent;
+        if (item && itemData) {
+           vcftimeline.resetItemProperties(item, container, itemData.group);
+        }
         container.timeline._timeline.itemsData.update(itemData);
     },
 
@@ -1117,6 +1205,10 @@ window.vcftimeline = {
         let item = container.timeline._timeline.itemSet.items[itemId];
         if(item)
         {
+            let itemData = item.data;
+            if (item && itemData) {
+               vcftimeline.resetItemProperties(item, container, itemData.group);
+            }
             container.timeline._timeline.itemSet._moveToGroup(item, groupId)
             container.timeline._timeline.itemsData.update(item.data);
         }
