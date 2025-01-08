@@ -355,8 +355,8 @@ window.vcftimeline = {
                 for (let i = 1; i < items.length; i++) {
                     const current = items[i];
                     if (current.dom?.box ) {// &&
-                    const groupName = current.data.subgroup;
-                    const groupTop = groupName && topMap[groupName] === undefined ? OFFSET : topMap[groupName];
+                        const groupName = current.data.subgroup;
+                        const groupTop = (groupName && topMap[groupName] !== undefined) ? topMap[groupName] : OFFSET;
                         if(!current.stackTop || group.isReCalculateStack)
                             calculateItemStuckTop(placedItems, current, margin, groupTop)
                         current.top = current.stackTop;
