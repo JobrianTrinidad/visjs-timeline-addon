@@ -347,7 +347,7 @@ window.vcftimeline = {
                     const groupName = items[0].data.subgroup;
                      if (groupName) {
                          if (topMap[groupName] === undefined) {
-                          topMap[groupName] = items[0].top;
+                                topMap[groupName] = items[0].top;
                            }
                       }
                 }
@@ -362,9 +362,9 @@ window.vcftimeline = {
                         current.top = current.stackTop;
                         current.dom.box.style.top = current.stackTop + 'px';
                          if (groupName) {
-                        if (topMap[groupName] === undefined) {
-                         topMap[groupName] = current.top;
-                           }
+                            if (topMap[groupName] === undefined) {
+                                topMap[groupName] = current.top;
+                            }
                         }
                     }
 
@@ -377,11 +377,19 @@ window.vcftimeline = {
                 }
 
                 groupHeight = (items.length === 1) ? (minHeight + OFFSET) : (maxHeight + OFFSET);
-                group._applyGroupHeight(groupHeight);
+                if (!group.groupHeight || group.groupHeight != groupHeight)
+                {
+                    group._applyGroupHeight(groupHeight);
+                    group.groupHeight = groupHeight;
+                }
                 group.isHightUpdate = true;
             } else if (group.isHightUpdate) {
                 groupHeight = (minHeight > maxHeight) ? (minHeight + OFFSET) : (maxHeight + OFFSET);
-                group._applyGroupHeight(groupHeight);
+                if (!group.groupHeight || group.groupHeight != groupHeight)
+                {
+                    group._applyGroupHeight(groupHeight);
+                    roup.groupHeight = groupHeight;
+                }
                 group.isHightUpdate = false;
             }
             group.isReCalculateStack = false;
@@ -484,7 +492,7 @@ window.vcftimeline = {
          *
          * @example
          * const group = {
-         *   visibleItems: { ... },
+         *   items: { ... },
          *   dom: { label: document.querySelector('.group-label') },
          *   props: { label: { height: 20 } },
          *   _calculateHeight: function(margin) { ... },
@@ -550,7 +558,11 @@ window.vcftimeline = {
                }
             }
             groupHeight = (items.length > 1) ?  (maxHeight + OFFSET) : (minHeight + OFFSET);
-            group._applyGroupHeight(groupHeight);
+             if (!group.groupHeight || group.groupHeight != groupHeight)
+             {
+                group._applyGroupHeight(groupHeight);
+                group.groupHeight = groupHeight;
+             }
             group.isHightUpdate = true;
             group.isReCalculateUnStack = false;
             return groupHeight;
@@ -654,14 +666,10 @@ window.vcftimeline = {
                 return;
             // Get the groups from the timeline
             const groups = container.timeline._timeline.itemSet.groups;
-            const visibleGroups = container.timeline._timeline.itemSet.getVisibleGroups();
             const OFFSET = 5;
             // Loop through each group
             Object.values(groups).forEach(group => {
-                if (!visibleGroups.includes(group.groupId.toString())) {
-                    return;
-                }
-                let items = Object.values(group.visibleItems);
+                let items = Object.values(group.items);
                 const shouldStack = (typeof group.isCollapsed === "undefined") ? container.timeline._timeline.itemSet.options.stack : !group.isCollapsed;
                 items = filterItems(items);
 
@@ -691,7 +699,7 @@ window.vcftimeline = {
                             const groupID = event.target.groupID;
                             const group = container.timeline._timeline.itemSet.groups[groupID];
                             group.isShowHideCall = true;
-                            items = Object.values(group.visibleItems);
+                            items = Object.values(group.items);
                             items = filterItems(items);
 
                             if (group.isCollapsed || button.classList.contains('icon-collapsed')) {
