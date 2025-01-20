@@ -328,21 +328,25 @@ window.vcftimeline = {
          * const groupHeight = stackGroup(items, group, container, OFFSET);
          */
         function stackGroup(items, group, container, OFFSET) {
-            let maxHeight = 0;
             let groupHeight = OFFSET;
-            const minHeight = (items.length > 0) ? group._calculateHeight(items[0].options.margin) : group.props.label.height;
-
+            const minHeight = (items.length > 0) ? OFFSET + items[0].height : group.props?.label?.height;
+            let maxHeight = OFFSET;
             if (items.length > 0) {
-                let margin = items[0].options.margin;
+                let margin = container?.timeline?._timeline?.itemSet?.options?.margin ?? items[0]?.options?.margin;
 
                 for (let i = 0; i < items.length; i++) {
                     items[i].top = null;
+                    if(!items[i].displayed)
+                        items[i].show()
                 }
                 let topMap = {};
                 const placedItems = [];
                 if (items[0].dom?.box) {
                     items[0].dom.box.style.top = ((!items[0].stackTop) ? OFFSET : items[0].stackTop) + 'px';
                     items[0].top = ((!items[0].stackTop) ? OFFSET : items[0].stackTop);
+                    if ((items[0].top + items[0].height) > maxHeight) {
+                        maxHeight = items[0].top + items[0].height;
+                    }
                     placedItems.push(items[0]);
                     const groupName = items[0].data.subgroup;
                      if (groupName) {
@@ -368,7 +372,7 @@ window.vcftimeline = {
                         }
                     }
 
-                    const currentTop = current.dom.box.style.top ? parseInt(current.dom.box.style.top) : 0;
+                    const currentTop = current.top ? current.top : 0;
                     if ((currentTop + current.height) > maxHeight) {
                         maxHeight = currentTop + current.height;
                     }
@@ -376,15 +380,16 @@ window.vcftimeline = {
                     placedItems.push(current);
                 }
 
-                groupHeight = (items.length === 1) ? (minHeight + OFFSET) : (maxHeight + OFFSET);
-                if (!group.groupHeight || group.groupHeight != groupHeight)
-                {
+                groupHeight = Math.max(minHeight, maxHeight);
+                groupHeight = Math.ceil(groupHeight + margin.item.vertical / 2);
+                const groupHeightParsed = parseInt(group?.dom?.label?.style?.height ?? "0", 10);
+               if (group.groupHeight || group.groupHeight !== groupHeight) {
                     group._applyGroupHeight(groupHeight);
                     group.groupHeight = groupHeight;
                 }
                 group.isHightUpdate = true;
             } else if (group.isHightUpdate) {
-                groupHeight = (minHeight > maxHeight) ? (minHeight + OFFSET) : (maxHeight + OFFSET);
+                groupHeight = Math.max(minHeight, maxHeight);
                 if (!group.groupHeight || group.groupHeight != groupHeight)
                 {
                     group._applyGroupHeight(groupHeight);
@@ -505,10 +510,9 @@ window.vcftimeline = {
         function unStackGroup(items, group, OFFSET, isReset) {
             if(!items || !group)
                 return;
-            const minHeight = (items.length > 0) ? group._calculateHeight(items[0].options.margin) : group.props.label.height;
+            const minHeight = (items.length > 0) ? (OFFSET + items[0].height) : group.props?.label?.height;
             let currentHeight = group.dom.label.offsetHeight;
-            let maxHeight = 0;
-            let groupHeight = OFFSET;
+            let maxHeight = (items.length > 0 && items[0]?.top != null && items[0]?.height != null) ? items[0].top + items[0].height : OFFSET;
             let isReCalculateUnStack = (group.topMap && group.topMap['topMapItemSize'] !== items.length) || group.isReCalculateUnStack
             let topMap = group.topMap && !isReCalculateUnStack ? group.topMap : {};
             topMap['topMapItemSize'] = items.length;
@@ -551,15 +555,18 @@ window.vcftimeline = {
                        currentItem.dom.box.style.top = `${currentItem.top}px`;
                    }
                    // Update maxHeight if current item exceeds it
-                   const currentTop = parseInt(currentItem.dom.box.style.top) || 0;
+                   const currentTop = currentItem.top || 0;
                    if (currentTop + currentItem.height > maxHeight) {
                        maxHeight = currentTop + currentItem.height;
                    }
                }
             }
-            groupHeight = (items.length > 1) ?  (maxHeight + OFFSET) : (minHeight + OFFSET);
-             if (!group.groupHeight || group.groupHeight != groupHeight)
-             {
+
+            let margin = container?.timeline?._timeline?.itemSet?.options?.margin ?? items[0]?.options?.margin;
+            let groupHeight = (items.length > 1) ?  (maxHeight) : (minHeight);
+            groupHeight = Math.ceil(groupHeight + margin.item.vertical / 2);
+            const groupHeightParsed = parseInt(group?.dom?.label?.style?.height ?? "0", 10);
+            if (!group.groupHeight || group.groupHeight !== groupHeight) {
                 group._applyGroupHeight(groupHeight);
                 group.groupHeight = groupHeight;
              }
@@ -655,6 +662,10 @@ window.vcftimeline = {
             return button;
         }
 
+        function isGroupVisible(group, range, margin) {
+            return group.dom.label.offsetTop <= range.body.domProps.centerContainer.height - range.body.domProps.scrollTop + margin.axis && group.dom.label.offsetTop + group.height + margin.axis >= -range.body.domProps.scrollTop;
+        }
+
         /**
          * Processes the groups in the timeline, stacks or unstacks items within groups, and handles the display of toggle buttons.
          *
@@ -666,10 +677,17 @@ window.vcftimeline = {
                 return;
             // Get the groups from the timeline
             const groups = container.timeline._timeline.itemSet.groups;
+            const visibleGroups = container.timeline._timeline.itemSet.getVisibleGroups();
+            const range = container.timeline._timeline.range;
+            const margin = container?.timeline?._timeline?.itemSet?.options?.margin;
             const OFFSET = 5;
             // Loop through each group
             Object.values(groups).forEach(group => {
                 let items = Object.values(group.items);
+                group.isVisible = isGroupVisible(group, range, margin)
+                if (!group.isVisible) {
+                    return;
+                }
                 const shouldStack = (typeof group.isCollapsed === "undefined") ? container.timeline._timeline.itemSet.options.stack : !group.isCollapsed;
                 items = filterItems(items);
 
