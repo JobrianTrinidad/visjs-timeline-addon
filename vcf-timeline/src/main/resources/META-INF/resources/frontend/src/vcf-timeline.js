@@ -527,6 +527,8 @@ window.vcftimeline = {
             for (let i = 1; i < items.length; i++) {
                const currentItem = items[i];
                const prevItem = items[i - 1];
+               if(!currentItem.displayed)
+                   currentItem.show()
 
                if (currentItem.dom?.box && prevItem.dom?.box) {
                    const currentStart = currentItem.data.start.getTime();
