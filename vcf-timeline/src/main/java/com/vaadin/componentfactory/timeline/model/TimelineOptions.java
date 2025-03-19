@@ -54,6 +54,11 @@ public class TimelineOptions {
    */
   public boolean editable = false;
 
+  /**
+   * Defines the editable options for items in the timeline.
+   */
+  public EditableOptions editableOptions = null;
+
   /* Specifies whether the Timeline can be zoomed by pinching or scrolling in the window.
    * Only applicable when option moveable is true.
    */
@@ -132,7 +137,18 @@ public class TimelineOptions {
     js.put("moveable", moveable);
     js.put("zoomable", zoomable);
     js.put("selectable", selectable);
-    js.put("editable", editable);
+
+    if (editableOptions == null)
+        js.put("editable", editable);
+    else {
+        JsonObject editableJs = Json.createObject();
+        editableJs.put("add", editableOptions.isDoubleTapAdd);
+        editableJs.put("updateTime", editableOptions.updateTime);
+        editableJs.put("updateGroup", editableOptions.updateGroup);
+        editableJs.put("remove", editableOptions.remove);
+        editableJs.put("overrideItems", editableOptions.overrideItems);
+        js.put("editable", editableJs);
+    }
     js.put("showCurrentTime", showCurrentTime);
     js.put("width", width);
 
@@ -153,5 +169,11 @@ public class TimelineOptions {
     Optional.ofNullable(tooltipOnItemUpdateTimeTemplate).ifPresent(v -> js.put("tooltipOnItemUpdateTimeTemplate", v.toString()));
 
     return js.toJson();
+  }
+
+  public EditableOptions getEditableOptions() {
+    if (editableOptions == null)
+      editableOptions = new EditableOptions();
+    return editableOptions;
   }
 }

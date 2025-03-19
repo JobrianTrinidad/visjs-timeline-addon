@@ -269,6 +269,66 @@ public class Timeline extends Div {
     }
 
     /**
+     * Sets wheter the items in the timeline can be manipulated. By default, items are un-manipulated.
+     *
+     * @param editable true if times can be manipulated
+     */
+    public void setEditable(boolean editable) {
+        getTimelineOptions().editable = editable;
+        updateTimelineOptions();
+    }
+
+    /**
+     * Sets whether new items can be added by double-tapping.
+     *
+     * @param isDoubleTapAdd true to allow adding new items, false otherwise.
+     */
+    public void setDoubleTappingAdd(boolean isDoubleTapAdd) {
+        getTimelineOptions().getEditableOptions().isDoubleTapAdd = isDoubleTapAdd;
+        updateTimelineOptions();
+    }
+
+    /**
+     * Sets whether items can be dragged horizontally to update their time.
+     *
+     * @param updateTime true to allow updating time, false otherwise.
+     */
+    public void setUpdateTime(boolean updateTime) {
+        getTimelineOptions().getEditableOptions().updateTime = updateTime;
+        updateTimelineOptions();
+    }
+
+    /**
+     * Sets whether items can be dragged from one group to another.
+     *
+     * @param updateGroup true to allow updating the group, false otherwise.
+     */
+    public void setUpdateGroup(boolean updateGroup) {
+        getTimelineOptions().getEditableOptions().updateGroup = updateGroup;
+        updateTimelineOptions();
+    }
+
+    /**
+     * Sets whether items can be deleted by tapping the delete button.
+     *
+     * @param remove true to allow item deletion, false otherwise.
+     */
+    public void setRemove(boolean remove) {
+        getTimelineOptions().getEditableOptions().remove = remove;
+        updateTimelineOptions();
+    }
+
+    /**
+     * Sets whether these options should override item-specific editable settings.
+     *
+     * @param overrideItems true to allow overriding item settings, false otherwise.
+     */
+    public void setOverrideItems(boolean overrideItems) {
+        getTimelineOptions().getEditableOptions().overrideItems = overrideItems;
+        updateTimelineOptions();
+    }
+
+    /**
      * Sets whether a vertical bar at current time is displayed. By default, not current time is
      * displayed.
      *

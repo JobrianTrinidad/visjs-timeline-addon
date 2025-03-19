@@ -200,11 +200,11 @@ public class ItemGroupsExample extends Div {
         );
 
         timeline.addGroupClickListener(e -> {
-            System.out.println(e.toString());
+//            System.out.println(e.toString());
         });
 
         timeline.addGroupZoomListener(e -> {
-            System.out.println(e.toString());
+//            System.out.println(e.toString());
         });
 
         timeline.addGroupItemsSelectListener(e -> {
