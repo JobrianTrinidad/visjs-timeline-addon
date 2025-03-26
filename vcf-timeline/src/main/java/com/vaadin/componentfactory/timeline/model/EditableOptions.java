@@ -48,7 +48,7 @@ public class EditableOptions {
     /**
      * When true, these options override item-specific editable settings.
      */
-    public boolean overrideItems = false;
+    public boolean overrideItems = true;
 
     public EditableOptions() {
     }
